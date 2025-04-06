@@ -25,7 +25,7 @@ const Patients = () => {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: patients, isLoading } = useQuery({
+  const { data: patients = [], isLoading } = useQuery({
     queryKey: ["/api/patients"],
   });
 
@@ -114,7 +114,7 @@ const Patients = () => {
                       <TableCell className="font-medium">{`${patient.firstName} ${patient.lastName}`}</TableCell>
                       <TableCell>{patient.patientId}</TableCell>
                       <TableCell>{patient.email || "N/A"}</TableCell>
-                      <TableCell>{formatDate(new Date(patient.createdAt), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>{formatDate(patient.createdAt, "MMM dd, yyyy")}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(patient.status)}`}>
                           {patient.status}

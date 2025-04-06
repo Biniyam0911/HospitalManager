@@ -33,15 +33,15 @@ const Appointments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const { data: appointments, isLoading } = useQuery({
+  const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["/api/appointments"],
   });
 
-  const { data: patients } = useQuery({
+  const { data: patients = [] } = useQuery({
     queryKey: ["/api/patients"],
   });
 
-  const { data: users } = useQuery({
+  const { data: users = [] } = useQuery({
     queryKey: ["/api/users"],
   });
 
@@ -203,8 +203,8 @@ const Appointments = () => {
                       <TableCell>{getDoctorName(appointment.doctorId)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span>{formatDate(new Date(appointment.date), "MMM dd, yyyy")}</span>
-                          <span className="text-midGrey text-sm">{formatDate(new Date(appointment.date), "hh:mm a")}</span>
+                          <span>{formatDate(appointment.date, "MMM dd, yyyy")}</span>
+                          <span className="text-midGrey text-sm">{formatDate(appointment.date, "hh:mm a")}</span>
                         </div>
                       </TableCell>
                       <TableCell>

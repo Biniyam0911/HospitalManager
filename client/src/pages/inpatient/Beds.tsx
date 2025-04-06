@@ -35,6 +35,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, User, Calendar, Bed } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatDate } from "@/lib/utils";
 
 const Beds = () => {
   const { toast } = useToast();
@@ -51,27 +52,27 @@ const Beds = () => {
   });
 
   // Fetch beds data
-  const { data: beds, isLoading: isLoadingBeds } = useQuery({
+  const { data: beds = [], isLoading: isLoadingBeds } = useQuery({
     queryKey: ["/api/beds"],
   });
 
   // Fetch wards data
-  const { data: wards, isLoading: isLoadingWards } = useQuery({
+  const { data: wards = [], isLoading: isLoadingWards } = useQuery({
     queryKey: ["/api/wards"],
   });
 
   // Fetch patients data for admission
-  const { data: patients, isLoading: isLoadingPatients } = useQuery({
+  const { data: patients = [], isLoading: isLoadingPatients } = useQuery({
     queryKey: ["/api/patients"],
   });
 
   // Fetch staff data for admission
-  const { data: doctors, isLoading: isLoadingDoctors } = useQuery({
+  const { data: doctors = [], isLoading: isLoadingDoctors } = useQuery({
     queryKey: ["/api/users"],
   });
 
   // Fetch active admissions
-  const { data: admissions, isLoading: isLoadingAdmissions } = useQuery({
+  const { data: admissions = [], isLoading: isLoadingAdmissions } = useQuery({
     queryKey: ["/api/admissions"],
   });
 
@@ -563,7 +564,7 @@ const BedGrid = ({
                   </div>
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-2 text-midGrey" />
-                    <span>Admitted: {new Date(admission.admissionDate).toLocaleDateString()}</span>
+                    <span>Admitted: {formatDate(admission.admissionDate, "MMM dd, yyyy")}</span>
                   </div>
                   {admission.diagnosis && (
                     <div className="text-sm text-midGrey">

@@ -90,7 +90,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments }) => 
             <div className="flex justify-between mt-1">
               <p className="text-midGrey text-xs flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
-                <span>{formatDate(new Date(appointment.date), "hh:mm a")}</span>
+                <span>{formatDate(appointment.date, "h:mm a")}</span>
               </p>
               <p className="text-midGrey text-xs">{getDoctorName(appointment.doctorId)}</p>
             </div>

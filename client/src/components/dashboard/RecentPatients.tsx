@@ -66,7 +66,7 @@ const RecentPatients: React.FC<RecentPatientsProps> = ({ patients }) => {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-textDark">{patient.patientId}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-midGrey">
-                  {formatDate(new Date(patient.createdAt), "MMM dd, yyyy")}
+                  {formatDate(patient.createdAt, "MMM dd, yyyy")}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs rounded-full ${getStatusClass(patient.status)}`}>
