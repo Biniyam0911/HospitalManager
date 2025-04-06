@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, setLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,12 +41,20 @@ const HR = () => {
             <UserPlus className="h-4 w-4 mr-2" />
             Add Employee
           </Button>
-          <Button variant="outline" onClick={() => navigate("/hr/leave-request")}>
-            Request Leave
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/hr/payroll")}>
-            Payroll
-          </Button>
+          <Button 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+              onClick={() => setLocation("/hr/leave-request")}
+            >
+              Request Leave
+            </Button>
+            <Button 
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+              onClick={() => setLocation("/hr/payroll")}
+            >
+              Payroll
+            </Button>
 
           <Dialog open={showAddEmployee} onOpenChange={setShowAddEmployee}>
             <DialogContent>
