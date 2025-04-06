@@ -71,6 +71,5 @@ export default function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) 
         />
         <Button type="submit">Add Employee</Button>
       </form>
-    </div>
   );
 }
