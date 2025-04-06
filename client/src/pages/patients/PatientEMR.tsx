@@ -53,6 +53,7 @@ const orderFormSchema = insertMedicalOrderSchema.extend({
   orderType: z.enum(["medication", "lab", "imaging", "procedure"], {
     required_error: "Please select an order type",
   }),
+  orderDate: z.coerce.date(),
   startDate: z.coerce.date(),
   priority: z.enum(["stat", "urgent", "routine"], {
     required_error: "Please select a priority level",
@@ -60,6 +61,7 @@ const orderFormSchema = insertMedicalOrderSchema.extend({
   instructions: z.string().min(1, "Instructions are required"),
   dosage: z.string().optional(),
   route: z.string().optional(),
+  frequency: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -151,12 +153,14 @@ const PatientEMR = ({ id }: { id: string }) => {
       doctorId: user?.id || 1, // Default to the first doctor if none is logged in
       name: "",
       orderType: "medication",
+      orderDate: new Date(),
       startDate: new Date(),
       priority: "routine",
-      status: "pending",
+      status: "ordered",
       instructions: "",
       dosage: "",
       route: "",
+      frequency: "",
     },
   });
 
@@ -176,7 +180,14 @@ const PatientEMR = ({ id }: { id: string }) => {
         description: "The patient's medical order was successfully saved.",
         variant: "default",
       });
-      orderForm.reset();
+      orderForm.reset({
+        ...orderForm.getValues(),
+        name: "",
+        instructions: "",
+        dosage: "",
+        route: "",
+        frequency: "",
+      });
       setActiveTab("orders");
     },
     onError: () => {
@@ -350,6 +361,10 @@ const PatientEMR = ({ id }: { id: string }) => {
                             <div>
                               <h4 className="font-semibold text-sm text-primary mb-1">Route</h4>
                               <p className="text-sm">{order.route}</p>
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm text-primary mb-1">Frequency</h4>
+                              <p className="text-sm">{order.frequency}</p>
                             </div>
                           </>
                         )}
@@ -555,6 +570,24 @@ const PatientEMR = ({ id }: { id: string }) => {
                     
                     <FormField
                       control={orderForm.control}
+                      name="orderDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order Date</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="date" 
+                              {...field}
+                              value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={orderForm.control}
                       name="startDate"
                       render={({ field }) => (
                         <FormItem>
@@ -641,6 +674,36 @@ const PatientEMR = ({ id }: { id: string }) => {
                             </FormItem>
                           )}
                         />
+                        
+                        <FormField
+                          control={orderForm.control}
+                          name="frequency"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Frequency</FormLabel>
+                              <FormControl>
+                                <Select 
+                                  value={field.value || ""} 
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select frequency" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="once">Once daily</SelectItem>
+                                    <SelectItem value="twice">Twice daily</SelectItem>
+                                    <SelectItem value="three">Three times daily</SelectItem>
+                                    <SelectItem value="four">Four times daily</SelectItem>
+                                    <SelectItem value="prn">As needed (PRN)</SelectItem>
+                                    <SelectItem value="weekly">Weekly</SelectItem>
+                                    <SelectItem value="stat">Immediately (STAT)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </>
                     )}
                     
@@ -670,7 +733,14 @@ const PatientEMR = ({ id }: { id: string }) => {
                       type="button" 
                       variant="outline" 
                       onClick={() => {
-                        orderForm.reset();
+                        orderForm.reset({
+                          ...orderForm.getValues(),
+                          name: "",
+                          instructions: "",
+                          dosage: "",
+                          route: "",
+                          frequency: "",
+                        });
                         setActiveTab("orders");
                       }}
                     >
