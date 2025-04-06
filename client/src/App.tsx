@@ -109,6 +109,12 @@ function Router() {
         </AppLayout>
       </Route>
 
+      <Route path="/emergency">
+        <AppLayout>
+          <ProtectedRoute component={Emergency} />
+        </AppLayout>
+      </Route>
+
       <Route path="/emergency/new-case">
         <AppLayout>
           <ProtectedRoute component={EmergencyForm} />
