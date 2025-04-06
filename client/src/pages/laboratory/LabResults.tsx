@@ -96,11 +96,11 @@ export default function LabResults() {
         params.push(`labSystemId=${selectedLabSystem}`);
       }
       
-      if (selectedPatient) {
+      if (selectedPatient && selectedPatient !== 'all') {
         params.push(`patientId=${selectedPatient}`);
       }
       
-      if (selectedTest) {
+      if (selectedTest && selectedTest !== 'all') {
         params.push(`testCode=${selectedTest}`);
       }
       
@@ -216,7 +216,7 @@ export default function LabResults() {
                   <SelectValue placeholder="Patient" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Patients</SelectItem>
+                  <SelectItem value="all">All Patients</SelectItem>
                   {patients?.map((patient: any) => (
                     <SelectItem key={patient.id} value={patient.id.toString()}>
                       {patient.firstName} {patient.lastName}
@@ -233,7 +233,7 @@ export default function LabResults() {
                   <SelectValue placeholder="Test Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Tests</SelectItem>
+                  <SelectItem value="all">All Tests</SelectItem>
                   {labTests?.map((test: any) => (
                     <SelectItem key={test.code} value={test.code}>
                       {test.name}
