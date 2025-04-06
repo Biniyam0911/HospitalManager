@@ -7,6 +7,7 @@ import {
   UserCog,
   FlaskRound,
   Hotel,
+  AlertCircle,
   Package,
   DollarSign,
   BarChart4,
@@ -51,6 +52,12 @@ const Sidebar: React.FC = () => {
       label: "Appointments",
       icon: <Calendar className="h-5 w-5 mr-3 text-primary" />,
       path: "/appointments",
+      group: "Clinical Operations",
+    },
+    {
+      label: "Emergency Department",
+      icon: <AlertCircle className="h-5 w-5 mr-3 text-primary" />,
+      path: "/emergency",
       group: "Clinical Operations",
     },
     {
