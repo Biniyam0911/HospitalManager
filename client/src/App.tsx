@@ -27,6 +27,8 @@ import LabSystems from "@/pages/laboratory/LabSystems";
 import LabResults from "@/pages/laboratory/LabResults";
 import SyncLogs from "@/pages/laboratory/SyncLogs";
 import Login from "@/pages/Login";
+import Emergency from "@/pages/emergency/Emergency";
+import EmergencyForm from "@/pages/emergency/EmergencyForm"; // Added import
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
 
@@ -51,31 +53,31 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      
+
       <Route path="/">
         <AppLayout>
           <ProtectedRoute component={Dashboard} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/emr">
         <AppLayout>
           <ProtectedRoute component={EMR} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/patients">
         <AppLayout>
           <ProtectedRoute component={Patients} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/patients/new">
         <AppLayout>
           <ProtectedRoute component={PatientForm} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/patients/:id">
         {(params) => (
           <AppLayout>
@@ -83,7 +85,7 @@ function Router() {
           </AppLayout>
         )}
       </Route>
-      
+
       <Route path="/patients/:id/emr">
         {(params) => (
           <AppLayout>
@@ -91,7 +93,7 @@ function Router() {
           </AppLayout>
         )}
       </Route>
-      
+
       <Route path="/inpatient/:id/emr">
         {(params) => (
           <AppLayout>
@@ -99,13 +101,13 @@ function Router() {
           </AppLayout>
         )}
       </Route>
-      
+
       <Route path="/appointments">
         <AppLayout>
           <ProtectedRoute component={Appointments} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/emergency/new-case">
         <AppLayout>
           <ProtectedRoute component={EmergencyForm} />
@@ -123,7 +125,7 @@ function Router() {
           <ProtectedRoute component={AppointmentForm} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/appointments/:id">
         {(params) => (
           <AppLayout>
@@ -131,55 +133,55 @@ function Router() {
           </AppLayout>
         )}
       </Route>
-      
+
       <Route path="/staff">
         <AppLayout>
           <ProtectedRoute component={Staff} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/staff/new">
         <AppLayout>
           <ProtectedRoute component={StaffForm} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/inpatient/beds">
         <AppLayout>
           <ProtectedRoute component={Beds} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/inventory">
         <AppLayout>
           <ProtectedRoute component={Inventory} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/billing">
         <AppLayout>
           <ProtectedRoute component={Billing} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/billing/payments">
         <AppLayout>
           <ProtectedRoute component={Payments} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/billing/checkout">
         <AppLayout>
           <ProtectedRoute component={Checkout} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/billing/credit-companies">
         <AppLayout>
           <ProtectedRoute component={CreditCompanies} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/services">
         <AppLayout>
           <ProtectedRoute component={Services} />
@@ -193,37 +195,37 @@ function Router() {
           </AppLayout>
         )}
       </Route>
-      
+
       <Route path="/services/orders">
         <AppLayout>
           <ProtectedRoute component={ServiceOrders} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/reports">
         <AppLayout>
           <ProtectedRoute component={Reports} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/laboratory/systems">
         <AppLayout>
           <ProtectedRoute component={LabSystems} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/laboratory/results">
         <AppLayout>
           <ProtectedRoute component={LabResults} />
         </AppLayout>
       </Route>
-      
+
       <Route path="/laboratory/sync-logs">
         <AppLayout>
           <ProtectedRoute component={SyncLogs} />
         </AppLayout>
       </Route>
-      
+
       <Route component={NotFound} />
     </Switch>
   );
