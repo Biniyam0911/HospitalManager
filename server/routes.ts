@@ -2241,6 +2241,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
+  // Imaging Routes
+  app.get("/api/imaging-studies", requireAuth, async (req, res) => {
+    try {
+      const { patientId, status } = req.query;
+      let studies;
+
+      if (patientId) {
+        studies = await storage.getImagingStudiesByPatient(Number(patientId));
+      } else if (status) {
+        studies = await storage.getImagingStudiesByStatus(status as string);
+      } else {
+        studies = await storage.getAllImagingStudies();
+      }
+      res.json(studies);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/imaging-studies", requireAuth, async (req, res) => {
+    try {
+      const studyData = req.body;
+      const study = await storage.createImagingStudy(studyData);
+      res.status(201).json(study);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/imaging-studies/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const studyData = req.body;
+      const study = await storage.updateImagingStudy(id, studyData);
+      if (!study) {
+        return res.status(404).json({ message: "Imaging study not found" });
+      }
+      res.json(study);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
   });
 
   return httpServer;
