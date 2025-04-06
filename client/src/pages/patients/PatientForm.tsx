@@ -77,7 +77,7 @@ const PatientForm = ({ id }: { id?: string }) => {
       const dateOfBirth = patient.dateOfBirth ? 
         new Date(patient.dateOfBirth).toISOString().split('T')[0] : 
         undefined;
-      
+
       form.reset({
         ...patient,
         dateOfBirth,
