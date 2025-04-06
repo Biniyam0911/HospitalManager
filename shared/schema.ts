@@ -123,20 +123,61 @@ export const insertAdmissionSchema = createInsertSchema(admissions).omit({
   createdAt: true,
 });
 
+// Pharmacy Stores
+export const pharmacyStores = pgTable("pharmacy_stores", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  location: text("location").notNull(),
+  type: text("type").notNull(), // main, satellite, emergency, outpatient
+  manager: integer("manager").notNull(), // user ID of the pharmacy manager
+  status: text("status").notNull().default("active"), // active, inactive, under maintenance
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPharmacyStoreSchema = createInsertSchema(pharmacyStores).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Inventory Items
 export const inventoryItems = pgTable("inventory_items", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   category: text("category").notNull(), // medicine, equipment, supplies
+  storeId: integer("store_id"), // optional relation to pharmacy store
   quantity: integer("quantity").notNull().default(0),
   unit: text("unit").notNull(), // box, piece, bottle, etc.
   reorderLevel: integer("reorder_level").notNull(),
   location: text("location").notNull(), // warehouse, pharmacy, etc.
   cost: numeric("cost").notNull(),
+  expiryDate: timestamp("expiry_date"), // for medicines
+  batchNumber: text("batch_number"), // for medicines
+  manufacturer: text("manufacturer"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Inventory Transfers (between stores)
+export const inventoryTransfers = pgTable("inventory_transfers", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id").notNull(),
+  sourceStoreId: integer("source_store_id").notNull(),
+  destinationStoreId: integer("destination_store_id").notNull(),
+  quantity: integer("quantity").notNull(),
+  status: text("status").notNull().default("pending"), // pending, completed, cancelled
+  transferDate: timestamp("transfer_date").defaultNow().notNull(),
+  completedDate: timestamp("completed_date"),
+  initiatedBy: integer("initiated_by").notNull(), // user ID
+  approvedBy: integer("approved_by"), // user ID
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertInventoryTransferSchema = createInsertSchema(inventoryTransfers).omit({
   id: true,
   createdAt: true,
 });
@@ -207,6 +248,229 @@ export const insertResourceUtilizationSchema = createInsertSchema(resourceUtiliz
   id: true,
 });
 
+// Service Management
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // consultation, procedure, test, etc.
+  description: text("description"),
+  duration: integer("duration"), // in minutes
+  price: numeric("price").notNull(),
+  status: text("status").notNull().default("active"), // active, inactive
+  requiresDoctor: boolean("requires_doctor").default(false),
+  requiresAppointment: boolean("requires_appointment").default(false),
+  taxable: boolean("taxable").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertServiceSchema = createInsertSchema(services).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Service Packages
+export const servicePackages = pgTable("service_packages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  discountPercentage: numeric("discount_percentage").default("0"),
+  status: text("status").notNull().default("active"), // active, inactive
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertServicePackageSchema = createInsertSchema(servicePackages).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Service Package Items
+export const servicePackageItems = pgTable("service_package_items", {
+  id: serial("id").primaryKey(),
+  packageId: integer("package_id").notNull(),
+  serviceId: integer("service_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertServicePackageItemSchema = createInsertSchema(servicePackageItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Fleet Management
+export const vehicles = pgTable("vehicles", {
+  id: serial("id").primaryKey(),
+  vehicleNumber: text("vehicle_number").notNull().unique(),
+  type: text("type").notNull(), // ambulance, delivery, staff transport
+  model: text("model").notNull(),
+  year: integer("year").notNull(),
+  capacity: integer("capacity"), // number of passengers
+  status: text("status").notNull().default("available"), // available, in-use, maintenance
+  fuelType: text("fuel_type").notNull(),
+  lastMaintenance: timestamp("last_maintenance"),
+  nextMaintenance: timestamp("next_maintenance"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertVehicleSchema = createInsertSchema(vehicles).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Vehicle Assignments
+export const vehicleAssignments = pgTable("vehicle_assignments", {
+  id: serial("id").primaryKey(),
+  vehicleId: integer("vehicle_id").notNull(),
+  assignedTo: integer("assigned_to").notNull(), // user ID of driver
+  purpose: text("purpose").notNull(),
+  patientId: integer("patient_id"), // optional, for ambulance services
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  status: text("status").notNull().default("scheduled"), // scheduled, in-progress, completed, cancelled
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertVehicleAssignmentSchema = createInsertSchema(vehicleAssignments).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Accounting Module
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  accountNumber: text("account_number").notNull().unique(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // asset, liability, equity, revenue, expense
+  category: text("category").notNull(), // cash, bank, receivable, payable, etc.
+  balance: numeric("balance").notNull().default("0"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAccountSchema = createInsertSchema(accounts).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Transactions
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  transactionDate: timestamp("transaction_date").notNull(),
+  reference: text("reference").notNull(),
+  description: text("description"),
+  amount: numeric("amount").notNull(),
+  type: text("type").notNull(), // debit, credit
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  approvedBy: integer("approved_by"), // user ID
+  createdBy: integer("created_by").notNull(), // user ID
+  accountId: integer("account_id").notNull(),
+  relatedEntityType: text("related_entity_type"), // patient, supplier, etc.
+  relatedEntityId: integer("related_entity_id"), // ID of the related entity
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTransactionSchema = createInsertSchema(transactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Point of Sale
+export const pos_terminals = pgTable("pos_terminals", {
+  id: serial("id").primaryKey(),
+  terminalId: text("terminal_id").notNull().unique(),
+  location: text("location").notNull(), // pharmacy, cafeteria, etc.
+  assignedTo: integer("assigned_to").notNull(), // user ID
+  status: text("status").notNull().default("active"), // active, inactive, maintenance
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPosTerminalSchema = createInsertSchema(pos_terminals).omit({
+  id: true,
+  createdAt: true,
+});
+
+// POS Transactions
+export const pos_transactions = pgTable("pos_transactions", {
+  id: serial("id").primaryKey(),
+  terminalId: integer("terminal_id").notNull(),
+  transactionNumber: text("transaction_number").notNull().unique(),
+  cashierId: integer("cashier_id").notNull(), // user ID
+  patientId: integer("patient_id"), // optional
+  totalAmount: numeric("total_amount").notNull(),
+  discountAmount: numeric("discount_amount").default("0"),
+  taxAmount: numeric("tax_amount").default("0"),
+  netAmount: numeric("net_amount").notNull(),
+  paymentMethod: text("payment_method").notNull(), // cash, card, insurance
+  paymentStatus: text("payment_status").notNull().default("completed"), // completed, refunded, voided
+  transactionDate: timestamp("transaction_date").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPosTransactionSchema = createInsertSchema(pos_transactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// POS Items
+export const pos_items = pgTable("pos_items", {
+  id: serial("id").primaryKey(),
+  transactionId: integer("transaction_id").notNull(),
+  itemId: integer("item_id").notNull(), // inventory item ID or service ID
+  itemType: text("item_type").notNull(), // product, service
+  quantity: integer("quantity").notNull(),
+  unitPrice: numeric("unit_price").notNull(),
+  discount: numeric("discount").default("0"),
+  taxRate: numeric("tax_rate").default("0"),
+  subtotal: numeric("subtotal").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPosItemSchema = createInsertSchema(pos_items).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Decision Support System
+export const clinical_guidelines = pgTable("clinical_guidelines", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  condition: text("condition").notNull(),
+  assessment: text("assessment").notNull(),
+  recommendedActions: json("recommended_actions").notNull(), // structured steps
+  evidenceLevel: text("evidence_level").notNull(), // A, B, C, etc.
+  source: text("source").notNull(),
+  publishDate: timestamp("publish_date").notNull(),
+  lastUpdated: timestamp("last_updated").notNull(),
+  status: text("status").notNull().default("active"), // active, archived, draft
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertClinicalGuidelineSchema = createInsertSchema(clinical_guidelines).omit({
+  id: true,
+  createdAt: true,
+});
+
+// AI-based decision support logs
+export const decision_support_logs = pgTable("decision_support_logs", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
+  symptoms: json("symptoms").notNull(),
+  suggestedDiagnosis: json("suggested_diagnosis").notNull(),
+  confidence: numeric("confidence").notNull(), // 0-100
+  guidelineId: integer("guideline_id"), // optional reference to clinical guidelines
+  doctorFeedback: text("doctor_feedback"), // doctor's feedback on the suggestion
+  finalDiagnosis: text("final_diagnosis"), // what the doctor actually diagnosed
+  wasHelpful: boolean("was_helpful"), // if the suggestion was helpful to the doctor
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDecisionSupportLogSchema = createInsertSchema(decision_support_logs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -229,8 +493,14 @@ export type InsertWard = z.infer<typeof insertWardSchema>;
 export type Admission = typeof admissions.$inferSelect;
 export type InsertAdmission = z.infer<typeof insertAdmissionSchema>;
 
+export type PharmacyStore = typeof pharmacyStores.$inferSelect;
+export type InsertPharmacyStore = z.infer<typeof insertPharmacyStoreSchema>;
+
 export type InventoryItem = typeof inventoryItems.$inferSelect;
 export type InsertInventoryItem = z.infer<typeof insertInventoryItemSchema>;
+
+export type InventoryTransfer = typeof inventoryTransfers.$inferSelect;
+export type InsertInventoryTransfer = z.infer<typeof insertInventoryTransferSchema>;
 
 export type Bill = typeof bills.$inferSelect;
 export type InsertBill = z.infer<typeof insertBillSchema>;
@@ -238,8 +508,84 @@ export type InsertBill = z.infer<typeof insertBillSchema>;
 export type BillItem = typeof billItems.$inferSelect;
 export type InsertBillItem = z.infer<typeof insertBillItemSchema>;
 
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
+
+export type ServicePackage = typeof servicePackages.$inferSelect;
+export type InsertServicePackage = z.infer<typeof insertServicePackageSchema>;
+
+export type ServicePackageItem = typeof servicePackageItems.$inferSelect;
+export type InsertServicePackageItem = z.infer<typeof insertServicePackageItemSchema>;
+
+export type Vehicle = typeof vehicles.$inferSelect;
+export type InsertVehicle = z.infer<typeof insertVehicleSchema>;
+
+export type VehicleAssignment = typeof vehicleAssignments.$inferSelect;
+export type InsertVehicleAssignment = z.infer<typeof insertVehicleAssignmentSchema>;
+
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
+export type PosTerminal = typeof pos_terminals.$inferSelect;
+export type InsertPosTerminal = z.infer<typeof insertPosTerminalSchema>;
+
+export type PosTransaction = typeof pos_transactions.$inferSelect;
+export type InsertPosTransaction = z.infer<typeof insertPosTransactionSchema>;
+
+export type PosItem = typeof pos_items.$inferSelect;
+export type InsertPosItem = z.infer<typeof insertPosItemSchema>;
+
+export type ClinicalGuideline = typeof clinical_guidelines.$inferSelect;
+export type InsertClinicalGuideline = z.infer<typeof insertClinicalGuidelineSchema>;
+
+export type DecisionSupportLog = typeof decision_support_logs.$inferSelect;
+export type InsertDecisionSupportLog = z.infer<typeof insertDecisionSupportLogSchema>;
+
 export type DashboardStat = typeof dashboardStats.$inferSelect;
 export type InsertDashboardStat = z.infer<typeof insertDashboardStatSchema>;
 
 export type ResourceUtilization = typeof resourceUtilization.$inferSelect;
 export type InsertResourceUtilization = z.infer<typeof insertResourceUtilizationSchema>;
+
+// Custom Reports
+export const reportTemplates = pgTable("report_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // financial, operational, clinical, inventory
+  createdBy: integer("created_by").notNull(),
+  isSystem: boolean("is_system").default(false),
+  config: json("config").notNull(), // stores the report configuration (fields, filters, etc.)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertReportTemplateSchema = createInsertSchema(reportTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const reportExecutions = pgTable("report_executions", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").notNull(),
+  executedBy: integer("executed_by").notNull(),
+  parameters: json("parameters"), // stores the parameters used for this execution
+  status: text("status").notNull().default("completed"), // in-progress, completed, failed
+  resultData: json("result_data"), // stores the actual report data
+  executedAt: timestamp("executed_at").defaultNow().notNull(),
+});
+
+export const insertReportExecutionSchema = createInsertSchema(reportExecutions).omit({
+  id: true,
+  executedAt: true,
+});
+
+export type ReportTemplate = typeof reportTemplates.$inferSelect;
+export type InsertReportTemplate = z.infer<typeof insertReportTemplateSchema>;
+
+export type ReportExecution = typeof reportExecutions.$inferSelect;
+export type InsertReportExecution = z.infer<typeof insertReportExecutionSchema>;

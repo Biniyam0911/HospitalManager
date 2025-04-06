@@ -537,6 +537,446 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // POS Terminals
+  app.get("/api/pos/terminals", requireAuth, async (req, res) => {
+    try {
+      const terminals = await storage.getAllPosTerminals();
+      res.json(terminals);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/pos/terminals/active", requireAuth, async (req, res) => {
+    try {
+      const terminals = await storage.getActivePosTerminals();
+      res.json(terminals);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/pos/terminals/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const terminal = await storage.getPosTerminal(id);
+      
+      if (!terminal) {
+        return res.status(404).json({ message: "Terminal not found" });
+      }
+      
+      res.json(terminal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/pos/terminals", requireAuth, async (req, res) => {
+    try {
+      const terminalData = req.body;
+      const newTerminal = await storage.createPosTerminal(terminalData);
+      res.status(201).json(newTerminal);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.patch("/api/pos/terminals/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const terminalData = req.body;
+      const updatedTerminal = await storage.updatePosTerminal(id, terminalData);
+      
+      if (!updatedTerminal) {
+        return res.status(404).json({ message: "Terminal not found" });
+      }
+      
+      res.json(updatedTerminal);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // POS Transactions
+  app.get("/api/pos/transactions", requireAuth, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (startDate && endDate) {
+        const transactions = await storage.getPosTransactionsByDateRange(
+          new Date(startDate as string),
+          new Date(endDate as string)
+        );
+        return res.json(transactions);
+      }
+      
+      // If terminalId is provided, filter by terminal
+      if (req.query.terminalId) {
+        const terminalId = parseInt(req.query.terminalId as string);
+        const transactions = await storage.getPosTransactionsByTerminal(terminalId);
+        return res.json(transactions);
+      }
+      
+      // Default: return all transactions
+      // This might be a heavy operation, so in a real system we would paginate
+      const transactions = [];
+      for (let i = 1; i <= 100; i++) {
+        const transaction = await storage.getPosTransaction(i);
+        if (transaction) {
+          transactions.push(transaction);
+        }
+      }
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/pos/transactions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const transaction = await storage.getPosTransaction(id);
+      
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      // Also get the transaction items
+      const items = await storage.getPosItemsByTransaction(id);
+      
+      res.json({
+        ...transaction,
+        items
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/pos/transactions", requireAuth, async (req, res) => {
+    try {
+      const transactionData = req.body;
+      const items = transactionData.items || [];
+      delete transactionData.items;
+      
+      // Create the transaction first
+      const newTransaction = await storage.createPosTransaction(transactionData);
+      
+      // Then create all the associated items
+      const createdItems = [];
+      for (const item of items) {
+        const newItem = await storage.createPosItem({
+          ...item,
+          posTransactionId: newTransaction.id
+        });
+        createdItems.push(newItem);
+      }
+      
+      res.status(201).json({
+        ...newTransaction,
+        items: createdItems
+      });
+    } catch (error: any) {
+      console.error(error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.patch("/api/pos/transactions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const transactionData = req.body;
+      const updatedTransaction = await storage.updatePosTransaction(id, transactionData);
+      
+      if (!updatedTransaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      // Get the items for the response
+      const items = await storage.getPosItemsByTransaction(id);
+      
+      res.json({
+        ...updatedTransaction,
+        items
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Clinical Guidelines
+  app.get("/api/clinical-guidelines", requireAuth, async (req, res) => {
+    try {
+      if (req.query.category) {
+        const guidelines = await storage.getClinicalGuidelinesByCategory(req.query.category as string);
+        return res.json(guidelines);
+      }
+      
+      const guidelines = await storage.getAllClinicalGuidelines();
+      res.json(guidelines);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/clinical-guidelines/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const guideline = await storage.getClinicalGuideline(id);
+      
+      if (!guideline) {
+        return res.status(404).json({ message: "Guideline not found" });
+      }
+      
+      res.json(guideline);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/clinical-guidelines", requireAuth, async (req, res) => {
+    try {
+      const guidelineData = req.body;
+      const newGuideline = await storage.createClinicalGuideline(guidelineData);
+      res.status(201).json(newGuideline);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.patch("/api/clinical-guidelines/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const guidelineData = req.body;
+      const updatedGuideline = await storage.updateClinicalGuideline(id, guidelineData);
+      
+      if (!updatedGuideline) {
+        return res.status(404).json({ message: "Guideline not found" });
+      }
+      
+      res.json(updatedGuideline);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Decision Support Logs
+  app.get("/api/decision-support-logs", requireAuth, async (req, res) => {
+    try {
+      if (req.query.patientId) {
+        const logs = await storage.getDecisionSupportLogsByPatient(parseInt(req.query.patientId as string));
+        return res.json(logs);
+      }
+      
+      if (req.query.doctorId) {
+        const logs = await storage.getDecisionSupportLogsByDoctor(parseInt(req.query.doctorId as string));
+        return res.json(logs);
+      }
+      
+      res.status(400).json({ message: "Missing required query parameter: patientId or doctorId" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/decision-support-logs/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const log = await storage.getDecisionSupportLog(id);
+      
+      if (!log) {
+        return res.status(404).json({ message: "Decision support log not found" });
+      }
+      
+      res.json(log);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/decision-support-logs", requireAuth, async (req, res) => {
+    try {
+      const logData = req.body;
+      const newLog = await storage.createDecisionSupportLog(logData);
+      res.status(201).json(newLog);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Report Templates
+  app.get("/api/report-templates", requireAuth, async (req, res) => {
+    try {
+      const templates = await storage.getAllReportTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-templates/system", requireAuth, async (req, res) => {
+    try {
+      const templates = await storage.getSystemReportTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-templates/category/:category", requireAuth, async (req, res) => {
+    try {
+      const { category } = req.params;
+      const templates = await storage.getReportTemplatesByCategory(category);
+      res.json(templates);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-templates/user/:userId", requireAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      const templates = await storage.getReportTemplatesByUser(userId);
+      res.json(templates);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-templates/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      const template = await storage.getReportTemplate(id);
+      if (!template) {
+        return res.status(404).json({ message: "Report template not found" });
+      }
+      res.json(template);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/report-templates", requireAuth, async (req, res) => {
+    try {
+      const templateData = req.body;
+      // Set the user who created the template
+      if (req.user) {
+        templateData.createdBy = req.user.id;
+      }
+      const newTemplate = await storage.createReportTemplate(templateData);
+      res.status(201).json(newTemplate);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/report-templates/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      const templateData = req.body;
+      const updatedTemplate = await storage.updateReportTemplate(id, templateData);
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: "Report template not found" });
+      }
+      res.json(updatedTemplate);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Report Executions
+  app.get("/api/report-executions", requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const executions = await storage.getRecentReportExecutions(limit);
+      res.json(executions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-executions/template/:templateId", requireAuth, async (req, res) => {
+    try {
+      const templateId = parseInt(req.params.templateId);
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      const executions = await storage.getReportExecutionsByTemplate(templateId);
+      res.json(executions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-executions/user/:userId", requireAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      const executions = await storage.getReportExecutionsByUser(userId);
+      res.json(executions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/report-executions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid execution ID" });
+      }
+      const execution = await storage.getReportExecution(id);
+      if (!execution) {
+        return res.status(404).json({ message: "Report execution not found" });
+      }
+      res.json(execution);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/report-executions", requireAuth, async (req, res) => {
+    try {
+      const executionData = req.body;
+      // Set the user who executed the report
+      if (req.user) {
+        executionData.executedBy = req.user.id;
+      }
+      const newExecution = await storage.createReportExecution(executionData);
+      res.status(201).json(newExecution);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/report-executions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid execution ID" });
+      }
+      const executionData = req.body;
+      const updatedExecution = await storage.updateReportExecution(id, executionData);
+      if (!updatedExecution) {
+        return res.status(404).json({ message: "Report execution not found" });
+      }
+      res.json(updatedExecution);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
 
   return httpServer;
 }
