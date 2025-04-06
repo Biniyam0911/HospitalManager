@@ -15,6 +15,9 @@ import {
   ClipboardList,
   Building2,
   CreditCard,
+  FlaskConical,
+  Database,
+  History,
 } from "lucide-react";
 
 const Sidebar: React.FC = () => {
@@ -75,6 +78,24 @@ const Sidebar: React.FC = () => {
       group: "Clinical Operations",
     },
     {
+      label: "Laboratory Systems",
+      icon: <Database className="h-5 w-5 mr-3 text-primary" />,
+      path: "/laboratory/systems",
+      group: "Clinical Operations",
+    },
+    {
+      label: "Lab Results",
+      icon: <FlaskConical className="h-5 w-5 mr-3 text-primary" />,
+      path: "/laboratory/results",
+      group: "Clinical Operations",
+    },
+    {
+      label: "Lab Sync Logs",
+      icon: <History className="h-5 w-5 mr-3 text-primary" />,
+      path: "/laboratory/sync-logs",
+      group: "Clinical Operations",
+    },
+    {
       label: "Inventory Control",
       icon: <Package className="h-5 w-5 mr-3 text-primary" />,
       path: "/inventory",
@@ -106,7 +127,9 @@ const Sidebar: React.FC = () => {
     },
   ];
 
-  const navGroups = {
+  type NavGroup = typeof navItems[0][];
+  
+  const navGroups: Record<string, NavGroup> = {
     "Clinical Operations": [],
     "Administration & Finance": [],
     "Reports & Settings": [],
