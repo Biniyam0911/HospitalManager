@@ -831,6 +831,46 @@ export const insertCreditCompanySchema = createInsertSchema(creditCompanies).omi
 
 export type CreditCompany = typeof creditCompanies.$inferSelect;
 export type InsertCreditCompany = z.infer<typeof insertCreditCompanySchema>;
+
+// HR Module
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  department: varchar("department", { length: 100 }).notNull(),
+  position: varchar("position", { length: 100 }).notNull(),
+  joinDate: timestamp("join_date").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const leaves = pgTable("leaves", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // sick, vacation, personal
+  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, approved, rejected
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLeaveSchema = createInsertSchema(leaves).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Leave = typeof leaves.$inferSelect;
+export type InsertLeave = z.infer<typeof insertLeaveSchema>;
 // Emergency Cases
 export const emergencyCases = pgTable("emergency_cases", {
   id: serial("id").primaryKey(),
