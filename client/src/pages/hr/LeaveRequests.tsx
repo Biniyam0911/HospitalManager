@@ -9,8 +9,7 @@ export default function LeaveRequests() {
   });
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-semibold mb-6">Leave Requests</h1>
+    <div className="py-2">
       <Table>
         <TableHeader>
           <TableRow>

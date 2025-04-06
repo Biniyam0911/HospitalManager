@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 
-export default function EmployeeForm() {
-  const [, navigate] = useLocation();
+export default function EmployeeForm({ onSuccess }: { onSuccess?: () => void }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -28,7 +27,7 @@ export default function EmployeeForm() {
       return response.json();
     },
     onSuccess: () => {
-      navigate("/hr");
+      onSuccess?.();
     }
   });
 
@@ -38,9 +37,7 @@ export default function EmployeeForm() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-semibold mb-6">Add New Employee</h1>
-      <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           placeholder="First Name"
           value={formData.firstName}

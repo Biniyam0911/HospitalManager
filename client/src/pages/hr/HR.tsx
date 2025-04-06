@@ -8,9 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Plus, UserPlus } from "lucide-react";
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import EmployeeForm from "./EmployeeForm";
+import LeaveRequests from "./LeaveRequests";
+
 const HR = () => {
-  const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const [showLeaveRequests, setShowLeaveRequests] = useState(false);
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["/api/employees"],
@@ -30,13 +35,31 @@ const HR = () => {
           <p className="text-midGrey">Manage employees and leave requests</p>
         </div>
         <div className="space-x-2">
-          <Button onClick={() => navigate("/hr/leaves")}>
+          <Button onClick={() => setShowLeaveRequests(true)}>
             Leave Requests
           </Button>
-          <Button onClick={() => navigate("/hr/new")}>
+          <Button onClick={() => setShowAddEmployee(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Add Employee
           </Button>
+
+          <Dialog open={showAddEmployee} onOpenChange={setShowAddEmployee}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Employee</DialogTitle>
+              </DialogHeader>
+              <EmployeeForm onSuccess={() => setShowAddEmployee(false)} />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showLeaveRequests} onOpenChange={setShowLeaveRequests}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Leave Requests</DialogTitle>
+              </DialogHeader>
+              <LeaveRequests />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
