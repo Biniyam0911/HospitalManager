@@ -831,3 +831,22 @@ export const insertCreditCompanySchema = createInsertSchema(creditCompanies).omi
 
 export type CreditCompany = typeof creditCompanies.$inferSelect;
 export type InsertCreditCompany = z.infer<typeof insertCreditCompanySchema>;
+// Emergency Cases
+export const emergencyCases = pgTable("emergency_cases", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  triageLevel: varchar("triage_level", { length: 50 }).notNull(), // red, yellow, green
+  chiefComplaint: text("chief_complaint").notNull(),
+  arrivalMode: varchar("arrival_mode", { length: 50 }).notNull(), // ambulance, walk-in, transfer
+  assignedDoctorId: integer("assigned_doctor_id"),
+  status: varchar("status", { length: 50 }).notNull().default("waiting"), // waiting, in-progress, completed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEmergencyCaseSchema = createInsertSchema(emergencyCases).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type EmergencyCase = typeof emergencyCases.$inferSelect;
+export type InsertEmergencyCase = z.infer<typeof insertEmergencyCaseSchema>;
