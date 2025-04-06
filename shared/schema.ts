@@ -938,3 +938,26 @@ export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 
 export type Leave = typeof leaves.$inferSelect;
 export type InsertLeave = z.infer<typeof insertLeaveSchema>;
+// Imaging Module
+export const imagingStudies = pgTable("imaging_studies", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  orderingDoctorId: integer("ordering_doctor_id").notNull(),
+  studyType: varchar("study_type", { length: 100 }).notNull(), // X-Ray, CT, MRI, Ultrasound
+  bodyPart: varchar("body_part", { length: 100 }).notNull(),
+  priority: varchar("priority", { length: 50 }).notNull().default("routine"), // routine, urgent, stat
+  status: varchar("status", { length: 50 }).notNull().default("ordered"), // ordered, scheduled, completed, cancelled
+  scheduledDate: timestamp("scheduled_date"),
+  performedDate: timestamp("performed_date"),
+  technologistId: integer("technologist_id"),
+  radiologistId: integer("radiologist_id"),
+  findings: text("findings"),
+  impression: text("impression"),
+  imageUrls: text("image_urls")[],
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertImagingStudySchema = createInsertSchema(imagingStudies).omit({
+  id: true,
+  createdAt: true,
+});

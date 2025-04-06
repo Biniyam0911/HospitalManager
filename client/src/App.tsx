@@ -39,6 +39,8 @@ import DialysisSessions from "@/pages/dialysis/DialysisSessions";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
 import QuickRegistration from "@/pages/emergency/QuickRegistration";
+import ImagingStudies from "@/pages/imaging/ImagingStudies"; // Added import
+
 
 // Protected route component
 function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, [key: string]: any }) {
@@ -260,6 +262,7 @@ function Router() {
       <Route path="/hr/leaves" component={LeaveRequests} />
       <Route path="/hr/leave-request" component={LeaveRequestForm} />
       <Route path="/hr/payroll" component={Payroll} />
+      <Route path="/imaging/studies" component={ImagingStudies} /> {/* Added route */}
       <Route component={NotFound} />
     </Switch>
   );
