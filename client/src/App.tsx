@@ -6,6 +6,9 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Patients from "@/pages/patients/Patients";
 import PatientForm from "@/pages/patients/PatientForm";
+import PatientEMR from "@/pages/patients/PatientEMR";
+import InpatientEMR from "@/pages/inpatient/InpatientEMR";
+import EMR from "@/pages/EMR";
 import Appointments from "@/pages/appointments/Appointments";
 import AppointmentForm from "@/pages/appointments/AppointmentForm";
 import Staff from "@/pages/staff/Staff";
@@ -46,6 +49,12 @@ function Router() {
         </AppLayout>
       </Route>
       
+      <Route path="/emr">
+        <AppLayout>
+          <ProtectedRoute component={EMR} />
+        </AppLayout>
+      </Route>
+      
       <Route path="/patients">
         <AppLayout>
           <ProtectedRoute component={Patients} />
@@ -62,6 +71,22 @@ function Router() {
         {(params) => (
           <AppLayout>
             <ProtectedRoute component={PatientForm} id={params.id} />
+          </AppLayout>
+        )}
+      </Route>
+      
+      <Route path="/patients/:id/emr">
+        {(params) => (
+          <AppLayout>
+            <ProtectedRoute component={PatientEMR} id={params.id} />
+          </AppLayout>
+        )}
+      </Route>
+      
+      <Route path="/inpatient/:id/emr">
+        {(params) => (
+          <AppLayout>
+            <ProtectedRoute component={InpatientEMR} id={params.id} />
           </AppLayout>
         )}
       </Route>

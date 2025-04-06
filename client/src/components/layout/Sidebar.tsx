@@ -11,6 +11,7 @@ import {
   DollarSign,
   BarChart4,
   Settings,
+  FileText,
 } from "lucide-react";
 
 const Sidebar: React.FC = () => {
@@ -50,6 +51,12 @@ const Sidebar: React.FC = () => {
       label: "Clinical Services",
       icon: <FlaskRound className="h-5 w-5 mr-3 text-primary" />,
       path: "/services",
+      group: "Clinical Operations",
+    },
+    {
+      label: "Electronic Medical Records",
+      icon: <FileText className="h-5 w-5 mr-3 text-primary" />,
+      path: "/emr",
       group: "Clinical Operations",
     },
     {
