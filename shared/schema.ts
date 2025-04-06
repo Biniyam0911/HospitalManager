@@ -836,6 +836,45 @@ export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Leave = typeof leaves.$inferSelect;
 export type InsertLeave = z.infer<typeof insertLeaveSchema>;
+// Dialysis Units
+export const dialysisUnits = pgTable("dialysis_units", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  capacity: integer("capacity").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDialysisUnitSchema = createInsertSchema(dialysisUnits).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Dialysis Sessions
+export const dialysisSessions = pgTable("dialysis_sessions", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  unitId: integer("unit_id").notNull(),
+  scheduledStart: timestamp("scheduled_start").notNull(),
+  scheduledEnd: timestamp("scheduled_end").notNull(),
+  actualStart: timestamp("actual_start"),
+  actualEnd: timestamp("actual_end"),
+  type: varchar("type", { length: 50 }).notNull(), // inpatient, outpatient
+  status: varchar("status", { length: 50 }).notNull().default("scheduled"), // scheduled, in-progress, completed, cancelled
+  nurseNotes: text("nurse_notes"),
+  preWeight: numeric("pre_weight", { precision: 5, scale: 2 }),
+  postWeight: numeric("post_weight", { precision: 5, scale: 2 }),
+  bpBefore: varchar("bp_before", { length: 20 }),
+  bpAfter: varchar("bp_after", { length: 20 }),
+  complications: text("complications"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDialysisSessionSchema = createInsertSchema(dialysisSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Emergency Cases
 export const emergencyCases = pgTable("emergency_cases", {
   id: serial("id").primaryKey(),

@@ -34,6 +34,8 @@ import LeaveRequestForm from "@/pages/hr/LeaveRequestForm";
 import Payroll from "@/pages/hr/Payroll";
 import Emergency from "@/pages/emergency/Emergency";
 import EmergencyForm from "@/pages/emergency/EmergencyForm";
+import DialysisUnits from "@/pages/dialysis/DialysisUnits";
+import DialysisSessions from "@/pages/dialysis/DialysisSessions";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
 import QuickRegistration from "@/pages/emergency/QuickRegistration";
@@ -117,6 +119,18 @@ function Router() {
       <Route path="/emergency">
         <AppLayout>
           <ProtectedRoute component={Emergency} />
+        </AppLayout>
+      </Route>
+
+      <Route path="/dialysis/units">
+        <AppLayout>
+          <ProtectedRoute component={DialysisUnits} />
+        </AppLayout>
+      </Route>
+
+      <Route path="/dialysis/sessions">
+        <AppLayout>
+          <ProtectedRoute component={DialysisSessions} />
         </AppLayout>
       </Route>
 
