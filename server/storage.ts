@@ -103,6 +103,12 @@ import {
   type InsertServiceOrderItem,
 } from "@shared/schema.pg";
 
+import {
+  creditCompanies,
+  type CreditCompany,
+  type InsertCreditCompany,
+} from "@shared/schema";
+
 // Interface for storage operations
 export interface IStorage {
   // Users
@@ -339,6 +345,13 @@ export interface IStorage {
   createOrderResult(result: InsertOrderResult): Promise<OrderResult>;
   updateOrderResult(id: number, result: Partial<InsertOrderResult>): Promise<OrderResult | undefined>;
   getOrderResultsByOrder(orderId: number): Promise<OrderResult[]>;
+  
+  // Credit Companies
+  getCreditCompany(id: number): Promise<CreditCompany | undefined>;
+  createCreditCompany(company: InsertCreditCompany): Promise<CreditCompany>;
+  updateCreditCompany(id: number, company: Partial<InsertCreditCompany>): Promise<CreditCompany | undefined>;
+  getAllCreditCompanies(): Promise<CreditCompany[]>;
+  getActiveCreditCompanies(): Promise<CreditCompany[]>;
 }
 
 // Memory Storage Implementation
@@ -353,6 +366,7 @@ export class MemStorage implements IStorage {
   private pharmacyStores: Map<number, PharmacyStore>;
   private inventoryItems: Map<number, InventoryItem>;
   private inventoryTransfers: Map<number, InventoryTransfer>;
+  private creditCompanies: Map<number, CreditCompany>;
   private services: Map<number, Service>;
   private servicePriceVersions: Map<number, ServicePriceVersion>;
   private serviceOrders: Map<number, ServiceOrder>;
@@ -389,6 +403,7 @@ export class MemStorage implements IStorage {
     pharmacyStores: number;
     inventoryItems: number;
     inventoryTransfers: number;
+    creditCompanies: number;
     services: number;
     servicePriceVersions: number;
     serviceOrders: number;
@@ -426,6 +441,7 @@ export class MemStorage implements IStorage {
     this.pharmacyStores = new Map();
     this.inventoryItems = new Map();
     this.inventoryTransfers = new Map();
+    this.creditCompanies = new Map();
     this.services = new Map();
     this.servicePriceVersions = new Map();
     this.serviceOrders = new Map();
@@ -460,6 +476,7 @@ export class MemStorage implements IStorage {
       pharmacyStores: 1,
       inventoryItems: 1,
       inventoryTransfers: 1,
+      creditCompanies: 1,
       services: 1,
       servicePriceVersions: 1,
       serviceOrders: 1,
@@ -2283,6 +2300,84 @@ export class MemStorage implements IStorage {
       pharmacyInventory: 67,
       date: new Date(),
     });
+    
+    // Create credit companies
+    await this.createCreditCompany({
+      name: "National Health Insurance",
+      code: "NHI-001",
+      status: "active",
+      email: "claims@nhi.example.com",
+      phone: "555-123-4567",
+      address: "123 Insurance Ave, Insurance City",
+      discountPercentage: "5",
+      contactPerson: "John Insurer",
+      contractStartDate: new Date("2023-01-01"),
+      contractEndDate: new Date("2023-12-31"),
+      notes: "Major national insurance provider",
+      paymentTerms: "Net 30"
+    });
+    
+    await this.createCreditCompany({
+      name: "Corporate Health Plan",
+      code: "CHP-002",
+      status: "active",
+      email: "claims@chp.example.com",
+      phone: "555-987-6543",
+      address: "456 Corporate Blvd, Business City",
+      discountPercentage: "10",
+      contactPerson: "Sarah Corporate",
+      contractStartDate: new Date("2023-02-15"),
+      contractEndDate: new Date("2024-02-14"),
+      notes: "Corporate employee health plan",
+      paymentTerms: "Net 45"
+    });
+    
+    await this.createCreditCompany({
+      name: "Senior Care Insurance",
+      code: "SCI-003",
+      status: "inactive",
+      email: "claims@sci.example.com",
+      phone: "555-456-7890",
+      address: "789 Elder St, Retirement City",
+      discountPercentage: "15",
+      contactPerson: "Mark Senior",
+      contractStartDate: new Date("2022-01-01"),
+      contractEndDate: new Date("2022-12-31"),
+      notes: "Insurance for senior citizens - Contract expired",
+      paymentTerms: "Net 15"
+    });
+  }
+  
+  // Credit Company methods
+  async getCreditCompany(id: number): Promise<CreditCompany | undefined> {
+    return this.creditCompanies.get(id);
+  }
+
+  async createCreditCompany(company: InsertCreditCompany): Promise<CreditCompany> {
+    const id = this.currentIds.creditCompanies++;
+    const createdAt = new Date();
+    const creditCompany: CreditCompany = { ...company, id, createdAt };
+    this.creditCompanies.set(id, creditCompany);
+    return creditCompany;
+  }
+
+  async updateCreditCompany(id: number, companyData: Partial<InsertCreditCompany>): Promise<CreditCompany | undefined> {
+    const company = await this.getCreditCompany(id);
+    if (!company) return undefined;
+
+    const updatedCompany = { ...company, ...companyData };
+    this.creditCompanies.set(id, updatedCompany);
+    return updatedCompany;
+  }
+
+  async getAllCreditCompanies(): Promise<CreditCompany[]> {
+    return Array.from(this.creditCompanies.values());
+  }
+
+  async getActiveCreditCompanies(): Promise<CreditCompany[]> {
+    return Array.from(this.creditCompanies.values()).filter(
+      (company) => company.status === "active",
+    );
   }
 }
 

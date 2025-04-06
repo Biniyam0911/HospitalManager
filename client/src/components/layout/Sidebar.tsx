@@ -13,6 +13,8 @@ import {
   Settings,
   FileText,
   ClipboardList,
+  Building2,
+  CreditCard,
 } from "lucide-react";
 
 const Sidebar: React.FC = () => {
@@ -82,6 +84,12 @@ const Sidebar: React.FC = () => {
       label: "Financial Operations",
       icon: <DollarSign className="h-5 w-5 mr-3 text-primary" />,
       path: "/billing",
+      group: "Administration & Finance",
+    },
+    {
+      label: "Credit Companies",
+      icon: <Building2 className="h-5 w-5 mr-3 text-primary" />,
+      path: "/billing/credit-companies",
       group: "Administration & Finance",
     },
     {

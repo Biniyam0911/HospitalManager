@@ -1675,5 +1675,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Credit Company Routes
+  app.get("/api/credit-companies", requireAuth, async (req, res) => {
+    try {
+      const companies = await storage.getAllCreditCompanies();
+      res.json(companies);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/active-credit-companies", requireAuth, async (req, res) => {
+    try {
+      const companies = await storage.getActiveCreditCompanies();
+      res.json(companies);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/credit-companies/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const company = await storage.getCreditCompany(id);
+      
+      if (!company) {
+        return res.status(404).json({ message: "Credit company not found" });
+      }
+      
+      res.json(company);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/credit-companies", requireAuth, async (req, res) => {
+    try {
+      const companyData = req.body;
+      const newCompany = await storage.createCreditCompany(companyData);
+      res.status(201).json(newCompany);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/credit-companies/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const companyData = req.body;
+      
+      const updatedCompany = await storage.updateCreditCompany(id, companyData);
+      
+      if (!updatedCompany) {
+        return res.status(404).json({ message: "Credit company not found" });
+      }
+      
+      res.json(updatedCompany);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   return httpServer;
 }

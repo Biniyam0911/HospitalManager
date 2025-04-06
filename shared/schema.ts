@@ -730,3 +730,29 @@ export type InsertMedicalOrder = z.infer<typeof insertMedicalOrderSchema>;
 
 export type OrderResult = typeof orderResults.$inferSelect;
 export type InsertOrderResult = z.infer<typeof insertOrderResultSchema>;
+
+// Credit Companies
+export const creditCompanies = pgTable("credit_companies", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  contactPerson: varchar("contact_person", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 255 }),
+  address: varchar("address", { length: 512 }),
+  contractStartDate: timestamp("contract_start_date"),
+  contractEndDate: timestamp("contract_end_date"),
+  discountPercentage: numeric("discount_percentage"),
+  paymentTerms: varchar("payment_terms", { length: 255 }),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCreditCompanySchema = createInsertSchema(creditCompanies).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type CreditCompany = typeof creditCompanies.$inferSelect;
+export type InsertCreditCompany = z.infer<typeof insertCreditCompanySchema>;

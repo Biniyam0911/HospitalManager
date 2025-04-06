@@ -18,6 +18,7 @@ import Inventory from "@/pages/inventory/Inventory";
 import Billing from "@/pages/billing/Billing";
 import Payments from "@/pages/billing/Payments";
 import Checkout from "@/pages/billing/Checkout";
+import CreditCompanies from "@/pages/billing/CreditCompanies";
 import Services from "@/pages/services/Services";
 import PriceHistory from "@/pages/services/PriceHistory";
 import ServiceOrders from "@/pages/services/ServiceOrders";
@@ -155,6 +156,12 @@ function Router() {
       <Route path="/billing/checkout">
         <AppLayout>
           <ProtectedRoute component={Checkout} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/billing/credit-companies">
+        <AppLayout>
+          <ProtectedRoute component={CreditCompanies} />
         </AppLayout>
       </Route>
       
