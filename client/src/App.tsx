@@ -23,6 +23,9 @@ import Services from "@/pages/services/Services";
 import PriceHistory from "@/pages/services/PriceHistory";
 import ServiceOrders from "@/pages/services/ServiceOrders";
 import Reports from "@/pages/reports/Reports";
+import LabSystems from "@/pages/laboratory/LabSystems";
+import LabResults from "@/pages/laboratory/LabResults";
+import SyncLogs from "@/pages/laboratory/SyncLogs";
 import Login from "@/pages/Login";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
@@ -188,6 +191,24 @@ function Router() {
       <Route path="/reports">
         <AppLayout>
           <ProtectedRoute component={Reports} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/laboratory/systems">
+        <AppLayout>
+          <ProtectedRoute component={LabSystems} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/laboratory/results">
+        <AppLayout>
+          <ProtectedRoute component={LabResults} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/laboratory/sync-logs">
+        <AppLayout>
+          <ProtectedRoute component={SyncLogs} />
         </AppLayout>
       </Route>
       

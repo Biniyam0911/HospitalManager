@@ -107,6 +107,15 @@ import {
   creditCompanies,
   type CreditCompany,
   type InsertCreditCompany,
+  labSystems,
+  type LabSystem,
+  type InsertLabSystem,
+  labResults,
+  type LabResult,
+  type InsertLabResult,
+  labSyncLogs,
+  type LabSyncLog,
+  type InsertLabSyncLog,
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -352,6 +361,29 @@ export interface IStorage {
   updateCreditCompany(id: number, company: Partial<InsertCreditCompany>): Promise<CreditCompany | undefined>;
   getAllCreditCompanies(): Promise<CreditCompany[]>;
   getActiveCreditCompanies(): Promise<CreditCompany[]>;
+  
+  // Lab Systems
+  getLabSystem(id: number): Promise<LabSystem | undefined>;
+  createLabSystem(insertSystem: InsertLabSystem): Promise<LabSystem>;
+  updateLabSystem(id: number, systemData: Partial<InsertLabSystem>): Promise<LabSystem | undefined>;
+  getAllLabSystems(): Promise<LabSystem[]>;
+  getActiveLabSystems(): Promise<LabSystem[]>;
+  
+  // Lab Results
+  getLabResult(id: number): Promise<LabResult | undefined>;
+  createLabResult(insertResult: InsertLabResult): Promise<LabResult>;
+  updateLabResult(id: number, resultData: Partial<InsertLabResult>): Promise<LabResult | undefined>;
+  getLabResultsByPatient(patientId: number): Promise<LabResult[]>;
+  getLabResultsByOrder(orderId: number): Promise<LabResult[]>;
+  getLabResultsBySystem(labSystemId: number): Promise<LabResult[]>;
+  getPendingLabResults(): Promise<LabResult[]>;
+  
+  // Lab Sync Logs
+  getLabSyncLog(id: number): Promise<LabSyncLog | undefined>;
+  createLabSyncLog(insertLog: InsertLabSyncLog): Promise<LabSyncLog>;
+  updateLabSyncLog(id: number, logData: Partial<InsertLabSyncLog>): Promise<LabSyncLog | undefined>;
+  getLabSyncLogsBySystem(labSystemId: number): Promise<LabSyncLog[]>;
+  getRecentLabSyncLogs(limit: number): Promise<LabSyncLog[]>;
 }
 
 // Memory Storage Implementation
@@ -367,6 +399,9 @@ export class MemStorage implements IStorage {
   private inventoryItems: Map<number, InventoryItem>;
   private inventoryTransfers: Map<number, InventoryTransfer>;
   private creditCompanies: Map<number, CreditCompany>;
+  private labSystems: Map<number, LabSystem>;
+  private labResults: Map<number, LabResult>;
+  private labSyncLogs: Map<number, LabSyncLog>;
   private services: Map<number, Service>;
   private servicePriceVersions: Map<number, ServicePriceVersion>;
   private serviceOrders: Map<number, ServiceOrder>;
@@ -442,6 +477,9 @@ export class MemStorage implements IStorage {
     this.inventoryItems = new Map();
     this.inventoryTransfers = new Map();
     this.creditCompanies = new Map();
+    this.labSystems = new Map();
+    this.labResults = new Map();
+    this.labSyncLogs = new Map();
     this.services = new Map();
     this.servicePriceVersions = new Map();
     this.serviceOrders = new Map();
@@ -477,6 +515,9 @@ export class MemStorage implements IStorage {
       inventoryItems: 1,
       inventoryTransfers: 1,
       creditCompanies: 1,
+      labSystems: 1,
+      labResults: 1,
+      labSyncLogs: 1,
       services: 1,
       servicePriceVersions: 1,
       serviceOrders: 1,
@@ -2378,6 +2419,118 @@ export class MemStorage implements IStorage {
     return Array.from(this.creditCompanies.values()).filter(
       (company) => company.status === "active",
     );
+  }
+  
+  // Lab Systems
+  async getLabSystem(id: number): Promise<LabSystem | undefined> {
+    return this.labSystems.get(id);
+  }
+
+  async createLabSystem(insertSystem: InsertLabSystem): Promise<LabSystem> {
+    const id = this.currentIds.labSystems++;
+    const createdAt = new Date();
+    const labSystem: LabSystem = { ...insertSystem, id, createdAt };
+    this.labSystems.set(id, labSystem);
+    return labSystem;
+  }
+
+  async updateLabSystem(id: number, systemData: Partial<InsertLabSystem>): Promise<LabSystem | undefined> {
+    const labSystem = await this.getLabSystem(id);
+    if (!labSystem) return undefined;
+
+    const updatedLabSystem = { ...labSystem, ...systemData };
+    this.labSystems.set(id, updatedLabSystem);
+    return updatedLabSystem;
+  }
+
+  async getAllLabSystems(): Promise<LabSystem[]> {
+    return Array.from(this.labSystems.values());
+  }
+
+  async getActiveLabSystems(): Promise<LabSystem[]> {
+    return Array.from(this.labSystems.values()).filter(
+      (system) => system.status === "active",
+    );
+  }
+  
+  // Lab Results
+  async getLabResult(id: number): Promise<LabResult | undefined> {
+    return this.labResults.get(id);
+  }
+
+  async createLabResult(insertResult: InsertLabResult): Promise<LabResult> {
+    const id = this.currentIds.labResults++;
+    const receivedAt = new Date();
+    const labResult: LabResult = { ...insertResult, id, receivedAt };
+    this.labResults.set(id, labResult);
+    return labResult;
+  }
+
+  async updateLabResult(id: number, resultData: Partial<InsertLabResult>): Promise<LabResult | undefined> {
+    const labResult = await this.getLabResult(id);
+    if (!labResult) return undefined;
+
+    const updatedLabResult = { ...labResult, ...resultData };
+    this.labResults.set(id, updatedLabResult);
+    return updatedLabResult;
+  }
+
+  async getLabResultsByPatient(patientId: number): Promise<LabResult[]> {
+    return Array.from(this.labResults.values()).filter(
+      (result) => result.patientId === patientId,
+    );
+  }
+
+  async getLabResultsByOrder(orderId: number): Promise<LabResult[]> {
+    return Array.from(this.labResults.values()).filter(
+      (result) => result.orderId === orderId,
+    );
+  }
+
+  async getLabResultsBySystem(labSystemId: number): Promise<LabResult[]> {
+    return Array.from(this.labResults.values()).filter(
+      (result) => result.labSystemId === labSystemId,
+    );
+  }
+
+  async getPendingLabResults(): Promise<LabResult[]> {
+    return Array.from(this.labResults.values()).filter(
+      (result) => result.status === "pending",
+    );
+  }
+  
+  // Lab Sync Logs
+  async getLabSyncLog(id: number): Promise<LabSyncLog | undefined> {
+    return this.labSyncLogs.get(id);
+  }
+
+  async createLabSyncLog(insertLog: InsertLabSyncLog): Promise<LabSyncLog> {
+    const id = this.currentIds.labSyncLogs++;
+    const startedAt = new Date();
+    const labSyncLog: LabSyncLog = { ...insertLog, id, startedAt };
+    this.labSyncLogs.set(id, labSyncLog);
+    return labSyncLog;
+  }
+
+  async updateLabSyncLog(id: number, logData: Partial<InsertLabSyncLog>): Promise<LabSyncLog | undefined> {
+    const labSyncLog = await this.getLabSyncLog(id);
+    if (!labSyncLog) return undefined;
+
+    const updatedLabSyncLog = { ...labSyncLog, ...logData };
+    this.labSyncLogs.set(id, updatedLabSyncLog);
+    return updatedLabSyncLog;
+  }
+
+  async getLabSyncLogsBySystem(labSystemId: number): Promise<LabSyncLog[]> {
+    return Array.from(this.labSyncLogs.values()).filter(
+      (log) => log.labSystemId === labSystemId,
+    );
+  }
+
+  async getRecentLabSyncLogs(limit: number): Promise<LabSyncLog[]> {
+    return Array.from(this.labSyncLogs.values())
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
+      .slice(0, limit);
   }
 }
 

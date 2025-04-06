@@ -731,6 +731,81 @@ export type InsertMedicalOrder = z.infer<typeof insertMedicalOrderSchema>;
 export type OrderResult = typeof orderResults.$inferSelect;
 export type InsertOrderResult = z.infer<typeof insertOrderResultSchema>;
 
+// Laboratory Systems Integration
+export const labSystems = pgTable("lab_systems", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  apiUrl: varchar("api_url", { length: 512 }).notNull(),
+  apiKey: varchar("api_key", { length: 255 }),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  connectionType: varchar("connection_type", { length: 50 }).notNull(), // REST, HL7, FHIR, etc.
+  lastSyncAt: timestamp("last_sync_at"),
+  syncFrequency: integer("sync_frequency").default(60), // in minutes
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  configuration: jsonb("configuration"), // Additional configuration options
+  notes: text("notes"),
+});
+
+export const insertLabSystemSchema = createInsertSchema(labSystems).omit({
+  id: true,
+  createdAt: true,
+  lastSyncAt: true,
+});
+
+export type LabSystem = typeof labSystems.$inferSelect;
+export type InsertLabSystem = z.infer<typeof insertLabSystemSchema>;
+
+// Lab Results
+export const labResults = pgTable("lab_results", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  orderId: integer("order_id"),
+  labSystemId: integer("lab_system_id").notNull(),
+  externalId: varchar("external_id", { length: 255 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  resultData: jsonb("result_data"),
+  resultDate: timestamp("result_date"),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  reviewedBy: integer("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  notes: text("notes"),
+  testType: varchar("test_type", { length: 255 }).notNull(),
+  testName: varchar("test_name", { length: 255 }).notNull(),
+  normalRanges: jsonb("normal_ranges"),
+  criticalFlag: boolean("critical_flag").default(false),
+  pdfUrl: varchar("pdf_url", { length: 512 }),
+});
+
+export const insertLabResultSchema = createInsertSchema(labResults).omit({
+  id: true,
+  receivedAt: true,
+});
+
+export type LabResult = typeof labResults.$inferSelect;
+export type InsertLabResult = z.infer<typeof insertLabResultSchema>;
+
+// Lab Result Sync Logs
+export const labSyncLogs = pgTable("lab_sync_logs", {
+  id: serial("id").primaryKey(),
+  labSystemId: integer("lab_system_id").notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  status: varchar("status", { length: 20 }).notNull().default("in_progress"),
+  totalRecords: integer("total_records").default(0),
+  successCount: integer("success_count").default(0),
+  errorCount: integer("error_count").default(0),
+  errorDetails: jsonb("error_details"),
+  notes: text("notes"),
+});
+
+export const insertLabSyncLogSchema = createInsertSchema(labSyncLogs).omit({
+  id: true,
+  startedAt: true,
+});
+
+export type LabSyncLog = typeof labSyncLogs.$inferSelect;
+export type InsertLabSyncLog = z.infer<typeof insertLabSyncLogSchema>;
+
 // Credit Companies
 export const creditCompanies = pgTable("credit_companies", {
   id: serial("id").primaryKey(),
