@@ -22,7 +22,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 // Patients
 export const patients = pgTable("patients", {
   id: serial("id").primaryKey(),
-  patientId: varchar("patient_id", { length: 50 }).notNull().unique(),
+  patientId: varchar("patient_id", { length: 50 }).notNull().unique().default(() => `P-${Math.floor(Math.random() * 90000) + 10000}`),
   firstName: varchar("first_name", { length: 255 }).notNull(),
   lastName: varchar("last_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }),

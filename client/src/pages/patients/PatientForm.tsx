@@ -37,7 +37,8 @@ import { ChevronLeft, Save } from "lucide-react";
 
 // Extend the schema for form validation
 const formSchema = insertPatientSchema.extend({
-  dateOfBirth: z.string().optional(),
+  dateOfBirth: z.string().optional().transform(val => val ? new Date(val).toISOString() : undefined),
+  patientId: z.string().optional(),
 });
 
 type PatientFormValues = z.infer<typeof formSchema>;
@@ -57,7 +58,6 @@ const PatientForm = ({ id }: { id?: string }) => {
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      patientId: "",
       firstName: "",
       lastName: "",
       email: "",
