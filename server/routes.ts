@@ -831,9 +831,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(updatedBill);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error processing payment:", error);
-      res.status(500).json({ message: error.message || "Failed to process payment" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to process payment" });
     }
   });
 
