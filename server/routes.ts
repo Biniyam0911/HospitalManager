@@ -18,6 +18,8 @@ import {
   insertTreatmentPlanSchema,
   insertMedicalOrderSchema,
   insertOrderResultSchema,
+  insertEmployeeSchema,
+  insertLeaveSchema
 } from "@shared/schema.pg";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -1609,6 +1611,342 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credit Company Routes
+  app.get("/api/credit-companies", requireAuth, async (req, res) => {
+    try {
+      const companies = await storage.getAllCreditCompanies();
+      res.json(companies);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/active-credit-companies", requireAuth, async (req, res) => {
+    try {
+      const companies = await storage.getActiveCreditCompanies();
+      res.json(companies);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/credit-companies/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const company = await storage.getCreditCompany(id);
+
+      if (!company) {
+        return res.status(404).json({ message: "Credit company not found" });
+      }
+
+      res.json(company);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/credit-companies", requireAuth, async (req, res) => {
+    try {
+      const companyData = req.body;
+      const newCompany = await storage.createCreditCompany(companyData);
+      res.status(201).json(newCompany);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/credit-companies/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const companyData = req.body;
+
+      const updatedCompany = await storage.updateCreditCompany(id, companyData);
+
+      if (!updatedCompany) {
+        return res.status(404).json({ message: "Credit company not found" });
+      }
+
+      res.json(updatedCompany);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Lab Systems Routes
+  app.get("/api/lab-systems", requireAuth, async (req, res) => {
+    try {
+      const systems = await storage.getAllLabSystems();
+      res.json(systems);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/active-lab-systems", requireAuth, async (req, res) => {
+    try {
+      const systems = await storage.getActiveLabSystems();
+      res.json(systems);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/lab-systems/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const system = await storage.getLabSystem(id);
+
+      if (!system) {
+        return res.status(404).json({ message: "Lab system not found" });
+      }
+
+      res.json(system);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/lab-systems", requireAuth, async (req, res) => {
+    try {
+      const systemData = req.body;
+      const newSystem = await storage.createLabSystem(systemData);
+      res.status(201).json(newSystem);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/lab-systems/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const systemData = req.body;
+
+      const updatedSystem = await storage.updateLabSystem(id, systemData);
+
+      if (!updatedSystem) {
+        return res.status(404).json({ message: "Lab system not found" });
+      }
+
+      res.json(updatedSystem);
+    } catch (error: any){
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Lab Results Routes
+  app.get("/api/lab-results", requireAuth, async (req, res) => {
+    try {
+      // Adding filtering options in the query
+      const patientId = req.query.patientId ? parseInt(req.query.patientId as string, 10) : undefined;
+      const orderId = req.query.orderId ? parseInt(req.query.orderId as string, 10) : undefined;
+      const labSystemId = req.query.labSystemId ? parseInt(req.query.labSystemId as string, 10) : undefined;
+
+      let results;
+      if (patientId) {
+        results = await storage.getLabResultsByPatient(patientId);
+      } else if (orderId) {
+        results = await storage.getLabResultsByOrder(orderId);
+      } else if (labSystemId) {
+        results = await storage.getLabResultsBySystem(labSystemId);
+      } else {
+        // Default to getting pending results if no filter is specified
+        results = await storage.getPendingLabResults();
+      }
+
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/lab-results/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const result = await storage.getLabResult(id);
+
+      if (!result) {
+        return res.status(404).json({ message: "Lab result not found" });
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/lab-results", requireAuth, async (req, res) => {
+    try {
+      const resultData = req.body;
+      const newResult = await storage.createLabResult(resultData);
+      res.status(201).json(newResult);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/lab-results/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const resultData = req.body;
+
+      const updatedResult = await storage.updateLabResult(id, resultData);
+
+      if (!updatedResult) {
+        return res.status(404).json({ message: "Lab result not found" });
+      }
+
+      res.json(updatedResult);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Lab Sync Logs Routes
+  app.get("/api/lab-sync-logs", requireAuth, async (req, res) => {
+    try {
+      const labSystemId = req.query.labSystemId ? parseInt(req.query.labSystemId as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      let logs;
+      if (labSystemId) {
+        logs = await storage.getLabSyncLogsBySystem(labSystemId);
+      } else {
+        logs = await storage.getRecentLabSyncLogs(limit);
+      }
+
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/lab-sync-logs/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const log = await storage.getLabSyncLog(id);
+
+      if (!log) {
+        return res.status(404).json({ message: "Lab sync log not found" });
+      }
+
+      res.json(log);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/lab-sync-logs", requireAuth, async (req, res) => {
+    try {
+      const logData = req.body;
+      const newLog = await storage.createLabSyncLog(logData);
+      res.status(201).json(newLog);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/lab-sync-logs/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const logData = req.body;
+
+      const updatedLog = await storage.updateLabSyncLog(id, logData);
+
+      if (!updatedLog) {
+        return res.status(404).json({ message: "Lab sync log not found" });
+      }
+
+      res.json(updatedLog);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // External Lab System Integration Route
+  app.post("/api/lab-systems/:id/sync", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const labSystem = await storage.getLabSystem(id);
+
+      if (!labSystem) {
+        return res.status(404).json({ message: "Lab system not found" });
+      }
+
+      // Create a sync log record to track this sync operation
+      const syncLog = await storage.createLabSyncLog({
+        labSystemId: id,
+        status: "in_progress"
+      });
+
+      // In a real implementation, this would make an API call to the external system
+      // using the labSystem.apiUrl and labSystem.apiKey
+      // For demo purposes, we'll simulate a successful sync
+
+      // Simulate some processing time
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Update the sync log to show completion
+      const updatedSyncLog = await storage.updateLabSyncLog(syncLog.id, {
+        status: "completed",
+        completedAt: new Date(),
+        totalRecords: 5,
+        successCount: 5,
+        errorCount: 0
+      });
+
+      // Update the labSystem's lastSyncAt timestamp
+      await storage.updateLabSystem(id, { 
+        lastSyncAt: new Date() 
+      });
+
+      res.json({
+        message: "Sync completed successfully",
+        syncLog: updatedSyncLog
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // HR Routes
+  app.get("/api/employees", requireAuth, async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      res.json(employees);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/employees", requireAuth, async (req, res) => {
+    try {
+      const employeeData = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(employeeData);
+      res.status(201).json(employee);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  app.get("/api/leaves", requireAuth, async (req, res) => {
+    try {
+      const leaves = await storage.getAllLeaves();
+      res.json(leaves);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/leaves", requireAuth, async (req, res) => {
+    try {
+      const leaveData = insertLeaveSchema.parse(req.body);
+      const leave = await storage.createLeave(leaveData);
+      res.status(201).json(leave);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  // Credit Companies
   app.get("/api/credit-companies", requireAuth, async (req, res) => {
     try {
       const companies = await storage.getAllCreditCompanies();

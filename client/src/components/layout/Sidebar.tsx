@@ -109,6 +109,12 @@ const Sidebar: React.FC = () => {
       group: "Administration & Finance",
     },
     {
+      label: "Human Resources",
+      icon: <Users className="h-5 w-5 mr-3 text-primary" />,
+      path: "/hr",
+      group: "Administration & Finance",
+    },
+    {
       label: "Financial Operations",
       icon: <DollarSign className="h-5 w-5 mr-3 text-primary" />,
       path: "/billing",
@@ -135,7 +141,7 @@ const Sidebar: React.FC = () => {
   ];
 
   type NavGroup = typeof navItems[0][];
-  
+
   const navGroups: Record<string, NavGroup> = {
     "Clinical Operations": [],
     "Administration & Finance": [],
@@ -192,7 +198,7 @@ const Sidebar: React.FC = () => {
               <div className="px-3 py-2 text-xs font-semibold text-midGrey tracking-wider uppercase">
                 {groupName}
               </div>
-              
+
               {items.map((item) => (
                 <Link 
                   key={item.path} 

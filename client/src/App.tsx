@@ -29,9 +29,10 @@ import SyncLogs from "@/pages/laboratory/SyncLogs";
 import Login from "@/pages/Login";
 import Emergency from "@/pages/emergency/Emergency";
 import EmergencyForm from "@/pages/emergency/EmergencyForm";
-import QuickRegistration from "@/pages/emergency/QuickRegistration";
+import HR from "@/pages/hr/HR";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
+import QuickRegistration from "@/pages/emergency/QuickRegistration";
 
 // Protected route component
 function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, [key: string]: any }) {
@@ -232,7 +233,11 @@ function Router() {
           <ProtectedRoute component={SyncLogs} />
         </AppLayout>
       </Route>
-
+      <Route path="/hr">
+        <AppLayout>
+          <ProtectedRoute component={HR} />
+        </AppLayout>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
