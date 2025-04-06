@@ -27,16 +27,11 @@ import LabSystems from "@/pages/laboratory/LabSystems";
 import LabResults from "@/pages/laboratory/LabResults";
 import SyncLogs from "@/pages/laboratory/SyncLogs";
 import Login from "@/pages/Login";
-
-        <Route path="/hr" component={HR} />
-        <Route path="/hr/new" component={EmployeeForm} />
-        <Route path="/hr/leaves" component={LeaveRequests} />
 import HR from "@/pages/hr/HR";
 import EmployeeForm from "@/pages/hr/EmployeeForm";
 import LeaveRequests from "@/pages/hr/LeaveRequests";
 import Emergency from "@/pages/emergency/Emergency";
 import EmergencyForm from "@/pages/emergency/EmergencyForm";
-import HR from "@/pages/hr/HR";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
 import QuickRegistration from "@/pages/emergency/QuickRegistration";
@@ -245,6 +240,8 @@ function Router() {
           <ProtectedRoute component={HR} />
         </AppLayout>
       </Route>
+      <Route path="/hr/new" component={EmployeeForm} />
+      <Route path="/hr/leaves" component={LeaveRequests} />
       <Route component={NotFound} />
     </Switch>
   );
