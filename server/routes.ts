@@ -18,7 +18,7 @@ import {
   insertTreatmentPlanSchema,
   insertMedicalOrderSchema,
   insertOrderResultSchema,
-  insertEmployeeSchema,
+  insertEmployeeSchema, insertLeaveSchema,
   insertLeaveSchema
 } from "@shared/schema.pg";
 import session from "express-session";
