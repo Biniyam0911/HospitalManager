@@ -201,6 +201,7 @@ export interface IStorage {
   getServicePriceVersionsByService(serviceId: number): Promise<ServicePriceVersion[]>;
   getServicePriceVersionsByYear(year: number): Promise<ServicePriceVersion[]>;
   getCurrentServicePriceVersion(serviceId: number): Promise<ServicePriceVersion | undefined>;
+  getServicePrices(serviceId: number): Promise<ServicePriceVersion[]>;
   
   // Service Packages
   getServicePackage(id: number): Promise<ServicePackage | undefined>;
@@ -1061,6 +1062,13 @@ export class MemStorage implements IStorage {
     
     // Sort by effectiveDate descending and return the most recent
     return currentVersions.sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime())[0];
+  }
+  
+  async getServicePrices(serviceId: number): Promise<ServicePriceVersion[]> {
+    // Get all price versions for a specific service
+    return Array.from(this.servicePriceVersions.values())
+      .filter(pv => pv.serviceId === serviceId)
+      .sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime());
   }
   
   // Service Packages

@@ -588,6 +588,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  app.get("/api/service-prices/:serviceId", requireAuth, async (req, res) => {
+    try {
+      const serviceId = Number(req.params.serviceId);
+      const prices = await storage.getServicePrices(serviceId);
+      res.json(prices);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   app.post("/api/service-price-versions", requireAuth, async (req, res) => {
     try {

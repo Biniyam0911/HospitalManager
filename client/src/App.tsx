@@ -18,6 +18,8 @@ import Inventory from "@/pages/inventory/Inventory";
 import Billing from "@/pages/billing/Billing";
 import Payments from "@/pages/billing/Payments";
 import Checkout from "@/pages/billing/Checkout";
+import Services from "@/pages/services/Services";
+import PriceHistory from "@/pages/services/PriceHistory";
 import Reports from "@/pages/reports/Reports";
 import Login from "@/pages/Login";
 import AppLayout from "@/components/layout/AppLayout";
@@ -153,6 +155,20 @@ function Router() {
         <AppLayout>
           <ProtectedRoute component={Checkout} />
         </AppLayout>
+      </Route>
+      
+      <Route path="/services">
+        <AppLayout>
+          <ProtectedRoute component={Services} />
+        </AppLayout>
+      </Route>
+
+      <Route path="/services/price-history/:serviceId">
+        {(params) => (
+          <AppLayout>
+            <ProtectedRoute component={PriceHistory} serviceId={params.serviceId} />
+          </AppLayout>
+        )}
       </Route>
       
       <Route path="/reports">
