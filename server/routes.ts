@@ -14,6 +14,9 @@ import {
   insertInventoryItemSchema,
   insertBillSchema,
   insertBillItemSchema,
+  insertTreatmentSchema,
+  insertMedicalOrderSchema,
+  insertOrderResultSchema,
 } from "@shared/schema";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -975,6 +978,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedExecution);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Treatment Routes
+  app.get("/api/treatments", requireAuth, async (req, res) => {
+    try {
+      const treatments = await storage.getActiveTreatments();
+      res.json(treatments);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/treatments/patient/:patientId", requireAuth, async (req, res) => {
+    try {
+      const patientId = Number(req.params.patientId);
+      const treatments = await storage.getTreatmentsByPatient(patientId);
+      res.json(treatments);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/treatments/admission/:admissionId", requireAuth, async (req, res) => {
+    try {
+      const admissionId = Number(req.params.admissionId);
+      const treatments = await storage.getTreatmentsByAdmission(admissionId);
+      res.json(treatments);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/treatments/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const treatment = await storage.getTreatment(id);
+      if (!treatment) {
+        return res.status(404).json({ message: "Treatment not found" });
+      }
+      res.json(treatment);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/treatments", requireAuth, async (req, res) => {
+    try {
+      const treatmentData = insertTreatmentSchema.parse(req.body);
+      const treatment = await storage.createTreatment(treatmentData);
+      res.status(201).json(treatment);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  app.patch("/api/treatments/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const treatmentData = req.body;
+      const treatment = await storage.updateTreatment(id, treatmentData);
+      if (!treatment) {
+        return res.status(404).json({ message: "Treatment not found" });
+      }
+      res.json(treatment);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  // Medical Order Routes
+  app.get("/api/medical-orders", requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getActiveMedicalOrders();
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/medical-orders/patient/:patientId", requireAuth, async (req, res) => {
+    try {
+      const patientId = Number(req.params.patientId);
+      const orders = await storage.getMedicalOrdersByPatient(patientId);
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/medical-orders/admission/:admissionId", requireAuth, async (req, res) => {
+    try {
+      const admissionId = Number(req.params.admissionId);
+      const orders = await storage.getMedicalOrdersByAdmission(admissionId);
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/medical-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const order = await storage.getMedicalOrder(id);
+      if (!order) {
+        return res.status(404).json({ message: "Medical order not found" });
+      }
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/medical-orders", requireAuth, async (req, res) => {
+    try {
+      const orderData = insertMedicalOrderSchema.parse(req.body);
+      const order = await storage.createMedicalOrder(orderData);
+      res.status(201).json(order);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  app.patch("/api/medical-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const orderData = req.body;
+      const order = await storage.updateMedicalOrder(id, orderData);
+      if (!order) {
+        return res.status(404).json({ message: "Medical order not found" });
+      }
+      res.json(order);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  // Order Results Routes
+  app.get("/api/order-results/order/:orderId", requireAuth, async (req, res) => {
+    try {
+      const orderId = Number(req.params.orderId);
+      const results = await storage.getOrderResultsByOrder(orderId);
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/order-results/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const result = await storage.getOrderResult(id);
+      if (!result) {
+        return res.status(404).json({ message: "Order result not found" });
+      }
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/order-results", requireAuth, async (req, res) => {
+    try {
+      const resultData = insertOrderResultSchema.parse(req.body);
+      const result = await storage.createOrderResult(resultData);
+      res.status(201).json(result);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
+    }
+  });
+
+  app.patch("/api/order-results/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const resultData = req.body;
+      const result = await storage.updateOrderResult(id, resultData);
+      if (!result) {
+        return res.status(404).json({ message: "Order result not found" });
+      }
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json(handleZodError(error));
     }
   });
 

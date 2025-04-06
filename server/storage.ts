@@ -27,6 +27,9 @@ import {
   resourceUtilization,
   reportTemplates,
   reportExecutions,
+  treatments,
+  medicalOrders,
+  orderResults,
   type User,
   type InsertUser,
   type Patient,
@@ -83,6 +86,12 @@ import {
   type InsertReportTemplate,
   type ReportExecution,
   type InsertReportExecution,
+  type Treatment,
+  type InsertTreatment,
+  type MedicalOrder,
+  type InsertMedicalOrder,
+  type OrderResult,
+  type InsertOrderResult,
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -275,6 +284,28 @@ export interface IStorage {
   getReportExecutionsByTemplate(templateId: number): Promise<ReportExecution[]>;
   getReportExecutionsByUser(userId: number): Promise<ReportExecution[]>;
   getRecentReportExecutions(limit: number): Promise<ReportExecution[]>;
+  
+  // Treatments
+  getTreatment(id: number): Promise<Treatment | undefined>;
+  createTreatment(treatment: InsertTreatment): Promise<Treatment>;
+  updateTreatment(id: number, treatment: Partial<InsertTreatment>): Promise<Treatment | undefined>;
+  getTreatmentsByPatient(patientId: number): Promise<Treatment[]>;
+  getTreatmentsByAdmission(admissionId: number): Promise<Treatment[]>;
+  getActiveTreatments(): Promise<Treatment[]>;
+  
+  // Medical Orders
+  getMedicalOrder(id: number): Promise<MedicalOrder | undefined>;
+  createMedicalOrder(order: InsertMedicalOrder): Promise<MedicalOrder>;
+  updateMedicalOrder(id: number, order: Partial<InsertMedicalOrder>): Promise<MedicalOrder | undefined>;
+  getMedicalOrdersByPatient(patientId: number): Promise<MedicalOrder[]>;
+  getMedicalOrdersByAdmission(admissionId: number): Promise<MedicalOrder[]>;
+  getActiveMedicalOrders(): Promise<MedicalOrder[]>;
+  
+  // Order Results
+  getOrderResult(id: number): Promise<OrderResult | undefined>;
+  createOrderResult(result: InsertOrderResult): Promise<OrderResult>;
+  updateOrderResult(id: number, result: Partial<InsertOrderResult>): Promise<OrderResult | undefined>;
+  getOrderResultsByOrder(orderId: number): Promise<OrderResult[]>;
 }
 
 // Memory Storage Implementation
@@ -307,6 +338,9 @@ export class MemStorage implements IStorage {
   private resourceUtil: ResourceUtilization | undefined;
   private reportTemplates: Map<number, ReportTemplate>;
   private reportExecutions: Map<number, ReportExecution>;
+  private treatments: Map<number, Treatment>;
+  private medicalOrders: Map<number, MedicalOrder>;
+  private orderResults: Map<number, OrderResult>;
 
   private currentIds: {
     users: number;
@@ -337,6 +371,9 @@ export class MemStorage implements IStorage {
     resourceUtil: number;
     reportTemplates: number;
     reportExecutions: number;
+    treatments: number;
+    medicalOrders: number;
+    orderResults: number;
   };
 
   constructor() {
@@ -366,6 +403,9 @@ export class MemStorage implements IStorage {
     this.billItems = new Map();
     this.reportTemplates = new Map();
     this.reportExecutions = new Map();
+    this.treatments = new Map();
+    this.medicalOrders = new Map();
+    this.orderResults = new Map();
 
     this.currentIds = {
       users: 1,
@@ -396,6 +436,9 @@ export class MemStorage implements IStorage {
       resourceUtil: 1,
       reportTemplates: 1,
       reportExecutions: 1,
+      treatments: 1,
+      medicalOrders: 1,
+      orderResults: 1,
     };
 
     // Initialize with sample data
@@ -1491,6 +1534,114 @@ export class MemStorage implements IStorage {
   // Report Executions
   async getReportExecution(id: number): Promise<ReportExecution | undefined> {
     return this.reportExecutions.get(id);
+  }
+  
+  // Treatments
+  async getTreatment(id: number): Promise<Treatment | undefined> {
+    return this.treatments.get(id);
+  }
+
+  async createTreatment(treatment: InsertTreatment): Promise<Treatment> {
+    const id = this.currentIds.treatments++;
+    const createdAt = new Date();
+    const newTreatment: Treatment = { ...treatment, id, createdAt };
+    this.treatments.set(id, newTreatment);
+    return newTreatment;
+  }
+
+  async updateTreatment(id: number, treatmentData: Partial<InsertTreatment>): Promise<Treatment | undefined> {
+    const treatment = await this.getTreatment(id);
+    if (!treatment) return undefined;
+
+    const updatedTreatment = { ...treatment, ...treatmentData };
+    this.treatments.set(id, updatedTreatment);
+    return updatedTreatment;
+  }
+
+  async getTreatmentsByPatient(patientId: number): Promise<Treatment[]> {
+    return Array.from(this.treatments.values()).filter(
+      (treatment) => treatment.patientId === patientId
+    );
+  }
+
+  async getTreatmentsByAdmission(admissionId: number): Promise<Treatment[]> {
+    return Array.from(this.treatments.values()).filter(
+      (treatment) => treatment.admissionId === admissionId
+    );
+  }
+
+  async getActiveTreatments(): Promise<Treatment[]> {
+    return Array.from(this.treatments.values()).filter(
+      (treatment) => treatment.status === "active"
+    );
+  }
+  
+  // Medical Orders
+  async getMedicalOrder(id: number): Promise<MedicalOrder | undefined> {
+    return this.medicalOrders.get(id);
+  }
+
+  async createMedicalOrder(order: InsertMedicalOrder): Promise<MedicalOrder> {
+    const id = this.currentIds.medicalOrders++;
+    const createdAt = new Date();
+    const newOrder: MedicalOrder = { ...order, id, createdAt };
+    this.medicalOrders.set(id, newOrder);
+    return newOrder;
+  }
+
+  async updateMedicalOrder(id: number, orderData: Partial<InsertMedicalOrder>): Promise<MedicalOrder | undefined> {
+    const order = await this.getMedicalOrder(id);
+    if (!order) return undefined;
+
+    const updatedOrder = { ...order, ...orderData };
+    this.medicalOrders.set(id, updatedOrder);
+    return updatedOrder;
+  }
+
+  async getMedicalOrdersByPatient(patientId: number): Promise<MedicalOrder[]> {
+    return Array.from(this.medicalOrders.values()).filter(
+      (order) => order.patientId === patientId
+    );
+  }
+
+  async getMedicalOrdersByAdmission(admissionId: number): Promise<MedicalOrder[]> {
+    return Array.from(this.medicalOrders.values()).filter(
+      (order) => order.admissionId === admissionId
+    );
+  }
+
+  async getActiveMedicalOrders(): Promise<MedicalOrder[]> {
+    return Array.from(this.medicalOrders.values()).filter(
+      (order) => order.status === "active"
+    );
+  }
+  
+  // Order Results
+  async getOrderResult(id: number): Promise<OrderResult | undefined> {
+    return this.orderResults.get(id);
+  }
+
+  async createOrderResult(result: InsertOrderResult): Promise<OrderResult> {
+    const id = this.currentIds.orderResults++;
+    const createdAt = new Date();
+    const newResult: OrderResult = { ...result, id, createdAt };
+    this.orderResults.set(id, newResult);
+    return newResult;
+  }
+
+  async updateOrderResult(id: number, resultData: Partial<InsertOrderResult>): Promise<OrderResult | undefined> {
+    const result = await this.getOrderResult(id);
+    if (!result) return undefined;
+
+    const updatedResult = { ...result, ...resultData };
+    this.orderResults.set(id, updatedResult);
+    return updatedResult;
+  }
+
+  async getOrderResultsByOrder(orderId: number): Promise<OrderResult[]> {
+    return Array.from(this.orderResults.values()).filter(
+      (result) => result.orderId === orderId
+    );
   }
 
   async createReportExecution(execution: InsertReportExecution): Promise<ReportExecution> {

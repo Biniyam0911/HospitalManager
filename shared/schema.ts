@@ -431,6 +431,72 @@ export const insertPosItemSchema = createInsertSchema(pos_items).omit({
   createdAt: true,
 });
 
+// Treatments
+export const treatments = pgTable("treatments", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
+  admissionId: integer("admission_id"), // Optional, linked to inpatient admission
+  name: text("name").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  frequency: text("frequency"), // daily, twice daily, every 8 hours, etc.
+  status: text("status").notNull().default("active"), // active, completed, discontinued
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTreatmentSchema = createInsertSchema(treatments).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Medical Orders
+export const medicalOrders = pgTable("medical_orders", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
+  admissionId: integer("admission_id"), // Optional, linked to inpatient admission
+  orderType: text("order_type").notNull(), // medication, lab, imaging, procedure
+  itemId: integer("item_id"), // ID of medication, lab test, etc.
+  name: text("name").notNull(), // Name of the medication, test, etc.
+  instructions: text("instructions"),
+  dosage: text("dosage"), // For medications
+  route: text("route"), // For medications: oral, IV, etc.
+  orderDate: timestamp("order_date").defaultNow().notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  status: text("status").notNull().default("pending"), // pending, active, completed, cancelled
+  priority: text("priority").notNull().default("routine"), // stat, urgent, routine
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMedicalOrderSchema = createInsertSchema(medicalOrders).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Order Results (Lab/Imaging)
+export const orderResults = pgTable("order_results", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  resultDate: timestamp("result_date").defaultNow().notNull(),
+  resultText: text("result_text"),
+  resultData: json("result_data"), // For structured results
+  performedBy: integer("performed_by").notNull(), // user ID
+  reviewedBy: integer("reviewed_by"), // user ID
+  status: text("status").notNull().default("completed"), // completed, pending review, amended
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertOrderResultSchema = createInsertSchema(orderResults).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Decision Support System
 export const clinical_guidelines = pgTable("clinical_guidelines", {
   id: serial("id").primaryKey(),
@@ -589,3 +655,12 @@ export type InsertReportTemplate = z.infer<typeof insertReportTemplateSchema>;
 
 export type ReportExecution = typeof reportExecutions.$inferSelect;
 export type InsertReportExecution = z.infer<typeof insertReportExecutionSchema>;
+
+export type Treatment = typeof treatments.$inferSelect;
+export type InsertTreatment = z.infer<typeof insertTreatmentSchema>;
+
+export type MedicalOrder = typeof medicalOrders.$inferSelect;
+export type InsertMedicalOrder = z.infer<typeof insertMedicalOrderSchema>;
+
+export type OrderResult = typeof orderResults.$inferSelect;
+export type InsertOrderResult = z.infer<typeof insertOrderResultSchema>;
