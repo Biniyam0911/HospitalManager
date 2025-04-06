@@ -26,7 +26,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-  
+
   // Initialize Stripe
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
     apiVersion: "2023-10-16"
@@ -61,12 +61,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!user) {
           return done(null, false, { message: "Invalid credentials" });
         }
-        
+
         // In a real app, you would hash and compare passwords
         if (user.password !== password) {
           return done(null, false, { message: "Invalid credentials" });
         }
-        
+
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -466,10 +466,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!service) {
         return res.status(404).json({ message: "Service not found" });
       }
-      
+
       // Get current price version
       const currentPriceVersion = await storage.getCurrentServicePriceVersion(id);
-      
+
       res.json({
         ...service,
         currentPrice: currentPriceVersion
@@ -482,13 +482,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/services", requireAuth, async (req, res) => {
     try {
       const serviceData = req.body;
-      
+
       // Extract price data for price version creation
       const { price, effectiveDate, year, ...serviceInsertData } = serviceData;
-      
+
       // Create the service first
       const newService = await storage.createService(serviceInsertData);
-      
+
       // If price data is provided, create initial price version
       if (price) {
         const priceVersionData = {
@@ -497,13 +497,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           effectiveDate: effectiveDate || new Date(),
           year: year || new Date().getFullYear()
         };
-        
+
         await storage.createServicePriceVersion(priceVersionData);
       }
-      
+
       // Get the current price version after creating
       const currentPriceVersion = await storage.getCurrentServicePriceVersion(newService.id);
-      
+
       res.status(201).json({
         ...newService,
         currentPrice: currentPriceVersion
@@ -517,16 +517,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = Number(req.params.id);
       const serviceData = req.body;
-      
+
       // Extract price data for price version update if provided
       const { price, effectiveDate, year, expiryDate, ...serviceUpdateData } = serviceData;
-      
+
       // Update the service
       const updatedService = await storage.updateService(id, serviceUpdateData);
       if (!updatedService) {
         return res.status(404).json({ message: "Service not found" });
       }
-      
+
       // If price data is provided, create a new price version
       let currentPriceVersion;
       if (price) {
@@ -537,13 +537,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           year: year || new Date().getFullYear(),
           expiryDate: expiryDate || null
         };
-        
+
         await storage.createServicePriceVersion(priceVersionData);
         currentPriceVersion = await storage.getCurrentServicePriceVersion(id);
       } else {
         currentPriceVersion = await storage.getCurrentServicePriceVersion(id);
       }
-      
+
       res.json({
         ...updatedService,
         currentPrice: currentPriceVersion
@@ -578,17 +578,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const serviceId = Number(req.params.serviceId);
       const priceVersion = await storage.getCurrentServicePriceVersion(serviceId);
-      
+
       if (!priceVersion) {
         return res.status(404).json({ message: "No current price version found for this service" });
       }
-      
+
       res.json(priceVersion);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.get("/api/service-prices/:serviceId", requireAuth, async (req, res) => {
     try {
       const serviceId = Number(req.params.serviceId);
@@ -645,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.user) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      
+
       const createdBy = req.user.id;
       const order = await storage.createServiceOrder({ 
         ...req.body, 
@@ -765,10 +765,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!bill) {
         return res.status(404).json({ message: "Bill not found" });
       }
-      
+
       // Get the bill items
       const items = await storage.getBillItemsByBill(id);
-      
+
       res.json({ ...bill, items });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -803,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/confirm-payment", requireAuth, async (req, res) => {
     try {
       const { billId, amount } = req.body;
-      
+
       if (!billId) {
         return res.status(400).json({ message: "Bill ID is required" });
       }
@@ -836,34 +836,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message || "Failed to process payment" });
     }
   });
-
-      // Calculate the new paid amount
-      const totalAmount = parseFloat(bill.totalAmount);
-      const currentPaidAmount = bill.paidAmount ? parseFloat(bill.paidAmount) : 0;
-      const paymentAmount = paymentIntent.amount / 100; // Convert from cents
-      const newPaidAmount = currentPaidAmount + paymentAmount;
-      
-      // Determine the new status
-      let newStatus = bill.status;
-      if (Math.abs(newPaidAmount - totalAmount) < 0.01) { // Within rounding error
-        newStatus = "Paid";
-      }
-
-      // Update the bill
-      const updatedBill = await storage.updateBill(bill.id, {
-        paidAmount: newPaidAmount.toFixed(2),
-        status: newStatus,
-        paymentMethod: "Credit Card",
-        stripePaymentStatus: paymentIntent.status,
-      });
-
-      res.json(updatedBill);
-    } catch (error: any) {
-      console.error("Error confirming payment:", error);
-      res.status(500).json({ message: error.message || "Failed to confirm payment" });
-    }
-  });
-
 
 
   // Bill Items Routes
@@ -906,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // POS Terminals
   app.get("/api/pos/terminals", requireAuth, async (req, res) => {
     try {
@@ -916,7 +888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.get("/api/pos/terminals/active", requireAuth, async (req, res) => {
     try {
       const terminals = await storage.getActivePosTerminals();
@@ -925,22 +897,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.get("/api/pos/terminals/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const terminal = await storage.getPosTerminal(id);
-      
+
       if (!terminal) {
         return res.status(404).json({ message: "Terminal not found" });
       }
-      
+
       res.json(terminal);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.post("/api/pos/terminals", requireAuth, async (req, res) => {
     try {
       const terminalData = req.body;
@@ -950,28 +922,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
-  
+
   app.patch("/api/pos/terminals/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const terminalData = req.body;
       const updatedTerminal = await storage.updatePosTerminal(id, terminalData);
-      
+
       if (!updatedTerminal) {
         return res.status(404).json({ message: "Terminal not found" });
       }
-      
+
       res.json(updatedTerminal);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
-  
+
   // POS Transactions
   app.get("/api/pos/transactions", requireAuth, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
-      
+
       if (startDate && endDate) {
         const transactions = await storage.getPosTransactionsByDateRange(
           new Date(startDate as string),
@@ -979,14 +951,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         return res.json(transactions);
       }
-      
+
       // If terminalId is provided, filter by terminal
       if (req.query.terminalId) {
         const terminalId = parseInt(req.query.terminalId as string);
         const transactions = await storage.getPosTransactionsByTerminal(terminalId);
         return res.json(transactions);
       }
-      
+
       // Default: return all transactions
       // This might be a heavy operation, so in a real system we would paginate
       const transactions = [];
@@ -1001,19 +973,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.get("/api/pos/transactions/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const transaction = await storage.getPosTransaction(id);
-      
+
       if (!transaction) {
         return res.status(404).json({ message: "Transaction not found" });
       }
-      
+
       // Also get the transaction items
       const items = await storage.getPosItemsByTransaction(id);
-      
+
       res.json({
         ...transaction,
         items
@@ -1022,16 +994,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.post("/api/pos/transactions", requireAuth, async (req, res) => {
     try {
       const transactionData = req.body;
       const items = transactionData.items || [];
       delete transactionData.items;
-      
+
       // Create the transaction first
       const newTransaction = await storage.createPosTransaction(transactionData);
-      
+
       // Then create all the associated items
       const createdItems = [];
       for (const item of items) {
@@ -1041,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         createdItems.push(newItem);
       }
-      
+
       res.status(201).json({
         ...newTransaction,
         items: createdItems
@@ -1051,20 +1023,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
-  
+
   app.patch("/api/pos/transactions/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const transactionData = req.body;
       const updatedTransaction = await storage.updatePosTransaction(id, transactionData);
-      
+
       if (!updatedTransaction) {
         return res.status(404).json({ message: "Transaction not found" });
       }
-      
+
       // Get the items for the response
       const items = await storage.getPosItemsByTransaction(id);
-      
+
       res.json({
         ...updatedTransaction,
         items
@@ -1073,7 +1045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
-  
+
   // Clinical Guidelines
   app.get("/api/clinical-guidelines", requireAuth, async (req, res) => {
     try {
@@ -1081,29 +1053,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const guidelines = await storage.getClinicalGuidelinesByCategory(req.query.category as string);
         return res.json(guidelines);
       }
-      
+
       const guidelines = await storage.getAllClinicalGuidelines();
       res.json(guidelines);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.get("/api/clinical-guidelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const guideline = await storage.getClinicalGuideline(id);
-      
+
       if (!guideline) {
         return res.status(404).json({ message: "Guideline not found" });
       }
-      
+
       res.json(guideline);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.post("/api/clinical-guidelines", requireAuth, async (req, res) => {
     try {
       const guidelineData = req.body;
@@ -1113,23 +1085,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
-  
+
   app.patch("/api/clinical-guidelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const guidelineData = req.body;
       const updatedGuideline = await storage.updateClinicalGuideline(id, guidelineData);
-      
+
       if (!updatedGuideline) {
         return res.status(404).json({ message: "Guideline not found" });
       }
-      
+
       res.json(updatedGuideline);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
-  
+
   // Decision Support Logs
   app.get("/api/decision-support-logs", requireAuth, async (req, res) => {
     try {
@@ -1137,33 +1109,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const logs = await storage.getDecisionSupportLogsByPatient(parseInt(req.query.patientId as string));
         return res.json(logs);
       }
-      
+
       if (req.query.doctorId) {
         const logs = await storage.getDecisionSupportLogsByDoctor(parseInt(req.query.doctorId as string));
         return res.json(logs);
       }
-      
+
       res.status(400).json({ message: "Missing required query parameter: patientId or doctorId" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.get("/api/decision-support-logs/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const log = await storage.getDecisionSupportLog(id);
-      
+
       if (!log) {
         return res.status(404).json({ message: "Decision support log not found" });
       }
-      
+
       res.json(log);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   app.post("/api/decision-support-logs", requireAuth, async (req, res) => {
     try {
       const logData = req.body;
@@ -1390,7 +1362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user) {
         orderData.createdBy = req.user.id;
       }
-      
+
       const newOrder = await storage.createServiceOrder(orderData);
       res.status(201).json(newOrder);
     } catch (error: any) {
@@ -1403,11 +1375,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = Number(req.params.id);
       const orderData = req.body;
       const updatedOrder = await storage.updateServiceOrder(id, orderData);
-      
+
       if (!updatedOrder) {
         return res.status(404).json({ message: "Service order not found" });
       }
-      
+
       res.json(updatedOrder);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1431,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set default values if not provided
       if (!itemData.status) itemData.status = "pending";
       if (!itemData.quantity) itemData.quantity = 1;
-      
+
       const newItem = await storage.createServiceOrderItem(itemData);
       res.status(201).json(newItem);
     } catch (error: any) {
@@ -1444,11 +1416,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = Number(req.params.id);
       const itemData = req.body;
       const updatedItem = await storage.updateServiceOrderItem(id, itemData);
-      
+
       if (!updatedItem) {
         return res.status(404).json({ message: "Service order item not found" });
       }
-      
+
       res.json(updatedItem);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1660,11 +1632,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const company = await storage.getCreditCompany(id);
-      
+
       if (!company) {
         return res.status(404).json({ message: "Credit company not found" });
       }
-      
+
       res.json(company);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1685,13 +1657,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const companyData = req.body;
-      
+
       const updatedCompany = await storage.updateCreditCompany(id, companyData);
-      
+
       if (!updatedCompany) {
         return res.status(404).json({ message: "Credit company not found" });
       }
-      
+
       res.json(updatedCompany);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1721,11 +1693,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const system = await storage.getLabSystem(id);
-      
+
       if (!system) {
         return res.status(404).json({ message: "Lab system not found" });
       }
-      
+
       res.json(system);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1746,13 +1718,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const systemData = req.body;
-      
+
       const updatedSystem = await storage.updateLabSystem(id, systemData);
-      
+
       if (!updatedSystem) {
         return res.status(404).json({ message: "Lab system not found" });
       }
-      
+
       res.json(updatedSystem);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1766,7 +1738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const patientId = req.query.patientId ? parseInt(req.query.patientId as string, 10) : undefined;
       const orderId = req.query.orderId ? parseInt(req.query.orderId as string, 10) : undefined;
       const labSystemId = req.query.labSystemId ? parseInt(req.query.labSystemId as string, 10) : undefined;
-      
+
       let results;
       if (patientId) {
         results = await storage.getLabResultsByPatient(patientId);
@@ -1778,7 +1750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Default to getting pending results if no filter is specified
         results = await storage.getPendingLabResults();
       }
-      
+
       res.json(results);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1789,11 +1761,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const result = await storage.getLabResult(id);
-      
+
       if (!result) {
         return res.status(404).json({ message: "Lab result not found" });
       }
-      
+
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1814,13 +1786,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const resultData = req.body;
-      
+
       const updatedResult = await storage.updateLabResult(id, resultData);
-      
+
       if (!updatedResult) {
         return res.status(404).json({ message: "Lab result not found" });
       }
-      
+
       res.json(updatedResult);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1832,14 +1804,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const labSystemId = req.query.labSystemId ? parseInt(req.query.labSystemId as string, 10) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-      
+
       let logs;
       if (labSystemId) {
         logs = await storage.getLabSyncLogsBySystem(labSystemId);
       } else {
         logs = await storage.getRecentLabSyncLogs(limit);
       }
-      
+
       res.json(logs);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1850,11 +1822,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const log = await storage.getLabSyncLog(id);
-      
+
       if (!log) {
         return res.status(404).json({ message: "Lab sync log not found" });
       }
-      
+
       res.json(log);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -1875,13 +1847,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const logData = req.body;
-      
+
       const updatedLog = await storage.updateLabSyncLog(id, logData);
-      
+
       if (!updatedLog) {
         return res.status(404).json({ message: "Lab sync log not found" });
       }
-      
+
       res.json(updatedLog);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1893,24 +1865,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const labSystem = await storage.getLabSystem(id);
-      
+
       if (!labSystem) {
         return res.status(404).json({ message: "Lab system not found" });
       }
-      
+
       // Create a sync log record to track this sync operation
       const syncLog = await storage.createLabSyncLog({
         labSystemId: id,
         status: "in_progress"
       });
-      
+
       // In a real implementation, this would make an API call to the external system
       // using the labSystem.apiUrl and labSystem.apiKey
       // For demo purposes, we'll simulate a successful sync
-      
+
       // Simulate some processing time
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Update the sync log to show completion
       const updatedSyncLog = await storage.updateLabSyncLog(syncLog.id, {
         status: "completed",
@@ -1919,12 +1891,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         successCount: 5,
         errorCount: 0
       });
-      
+
       // Update the labSystem's lastSyncAt timestamp
       await storage.updateLabSystem(id, { 
         lastSyncAt: new Date() 
       });
-      
+
       res.json({
         message: "Sync completed successfully",
         syncLog: updatedSyncLog
