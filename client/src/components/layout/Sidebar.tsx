@@ -61,6 +61,18 @@ const Sidebar: React.FC = () => {
       group: "Clinical Operations",
     },
     {
+      label: "Dialysis Units",
+      icon: <FlaskRound className="h-5 w-5 mr-3 text-primary" />,
+      path: "/dialysis/units",
+      group: "Clinical Operations",
+    },
+    {
+      label: "Dialysis Sessions",
+      icon: <Calendar className="h-5 w-5 mr-3 text-primary" />,
+      path: "/dialysis/sessions",
+      group: "Clinical Operations",
+    },
+    {
       label: "Clinical Services",
       icon: <FlaskRound className="h-5 w-5 mr-3 text-primary" />,
       path: "/services",
