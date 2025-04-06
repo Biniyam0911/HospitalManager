@@ -594,7 +594,7 @@ export default function ServiceOrders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="0">None</SelectItem>
                           {doctors?.map((doctor: any) => (
                             <SelectItem key={doctor.id} value={doctor.id.toString()}>
                               {doctor.name} ({doctor.specialty || "General"})
