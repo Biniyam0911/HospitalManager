@@ -28,7 +28,8 @@ import LabResults from "@/pages/laboratory/LabResults";
 import SyncLogs from "@/pages/laboratory/SyncLogs";
 import Login from "@/pages/Login";
 import Emergency from "@/pages/emergency/Emergency";
-import EmergencyForm from "@/pages/emergency/EmergencyForm"; // Added import
+import EmergencyForm from "@/pages/emergency/EmergencyForm";
+import QuickRegistration from "@/pages/emergency/QuickRegistration";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "./lib/auth";
 
