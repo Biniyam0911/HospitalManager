@@ -42,6 +42,7 @@ const Beds = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [admissionDialogOpen, setAdmissionDialogOpen] = useState(false);
   const [dischargeDialogOpen, setDischargeDialogOpen] = useState(false);
+  const [addBedDialogOpen, setAddBedDialogOpen] = useState(false);
   const [selectedBed, setSelectedBed] = useState<any>(null);
   const [selectedWard, setSelectedWard] = useState<string>("all");
   const [formData, setFormData] = useState({
@@ -49,6 +50,11 @@ const Beds = () => {
     doctorId: "",
     diagnosis: "",
     deposit: "0"
+  });
+  const [newBedData, setNewBedData] = useState({
+    bedNumber: "",
+    wardId: "",
+    status: "available"
   });
 
   // Fetch beds data
@@ -94,6 +100,33 @@ const Beds = () => {
       toast({
         title: "Error",
         description: `Failed to admit patient: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create new bed mutation
+  const createBedMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("POST", "/api/beds", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/beds"] });
+      setAddBedDialogOpen(false);
+      setNewBedData({
+        bedNumber: "",
+        wardId: "",
+        status: "available"
+      });
+      toast({
+        title: "Success",
+        description: "New bed added successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to add new bed: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -181,6 +214,16 @@ const Beds = () => {
     }
   };
 
+  // Handle adding a new bed
+  const handleAddBed = (e: React.FormEvent) => {
+    e.preventDefault();
+    createBedMutation.mutate({
+      bedNumber: newBedData.bedNumber,
+      wardId: parseInt(newBedData.wardId),
+      status: newBedData.status
+    });
+  };
+
   // Filter doctors only
   const doctorsList = doctors?.filter((user: any) => user.role === "doctor") || [];
 
@@ -200,7 +243,7 @@ const Beds = () => {
         </div>
         <Button 
           className="bg-primary hover:bg-primary/90"
-          onClick={() => alert("Feature not implemented")}
+          onClick={() => setAddBedDialogOpen(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Add New Bed
@@ -503,6 +546,76 @@ const Beds = () => {
               {dischargePatientMutation.isPending ? "Discharging..." : "Discharge Patient"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Bed Dialog */}
+      <Dialog open={addBedDialogOpen} onOpenChange={setAddBedDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Bed</DialogTitle>
+            <DialogDescription>
+              Create a new bed in the hospital system
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddBed}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bed Number</label>
+                <Input
+                  placeholder="e.g., A-101, ICU-05"
+                  value={newBedData.bedNumber}
+                  onChange={(e) => setNewBedData({...newBedData, bedNumber: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Ward</label>
+                <Select
+                  value={newBedData.wardId}
+                  onValueChange={(value) => setNewBedData({...newBedData, wardId: value})}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ward" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {wards?.map((ward: any) => (
+                      <SelectItem key={ward.id} value={ward.id.toString()}>
+                        {ward.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={newBedData.status}
+                  onValueChange={(value) => setNewBedData({...newBedData, status: value})}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="maintenance">Under Maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setAddBedDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createBedMutation.isPending}>
+                {createBedMutation.isPending ? "Adding..." : "Add Bed"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
