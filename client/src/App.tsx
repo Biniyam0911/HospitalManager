@@ -31,6 +31,7 @@ import HR from "@/pages/hr/HR";
 import EmployeeForm from "@/pages/hr/EmployeeForm";
 import LeaveRequests from "@/pages/hr/LeaveRequests";
 import LeaveRequestForm from "@/pages/hr/LeaveRequestForm";
+import Payroll from "@/pages/hr/Payroll";
 import Emergency from "@/pages/emergency/Emergency";
 import EmergencyForm from "@/pages/emergency/EmergencyForm";
 import AppLayout from "@/components/layout/AppLayout";
