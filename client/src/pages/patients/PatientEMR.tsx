@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertMedicalRecordSchema } from "@shared/schema";
+import { insertMedicalRecordSchema, insertMedicalOrderSchema } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
 
@@ -29,6 +29,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Create a form schema based on insertMedicalRecordSchema 
 const formSchema = insertMedicalRecordSchema.extend({
@@ -38,7 +46,23 @@ const formSchema = insertMedicalRecordSchema.extend({
   plan: z.string().min(1, "Treatment plan is required"),
 });
 
+// Create a form schema for medical orders
+const orderFormSchema = insertMedicalOrderSchema.extend({
+  name: z.string().min(1, "Order name is required"),
+  orderType: z.enum(["medication", "lab", "imaging", "procedure"], {
+    required_error: "Please select an order type",
+  }),
+  startDate: z.coerce.date(),
+  priority: z.enum(["stat", "urgent", "routine"], {
+    required_error: "Please select a priority level",
+  }),
+  instructions: z.string().min(1, "Instructions are required"),
+  dosage: z.string().optional(),
+  route: z.string().optional(),
+});
+
 type FormValues = z.infer<typeof formSchema>;
+type OrderFormValues = z.infer<typeof orderFormSchema>;
 
 const PatientEMR = ({ id }: { id: string }) => {
   const [, navigate] = useLocation();
@@ -118,6 +142,55 @@ const PatientEMR = ({ id }: { id: string }) => {
     createRecordMutation.mutate(data);
   };
 
+  // Order form setup
+  const orderForm = useForm<OrderFormValues>({
+    resolver: zodResolver(orderFormSchema),
+    defaultValues: {
+      patientId: parseInt(id),
+      doctorId: user?.id || 1, // Default to the first doctor if none is logged in
+      name: "",
+      orderType: "medication",
+      startDate: new Date(),
+      priority: "routine",
+      status: "pending",
+      instructions: "",
+      dosage: "",
+      route: "",
+    },
+  });
+
+  // Create medical order mutation
+  const createOrderMutation = useMutation({
+    mutationFn: async (data: OrderFormValues) => {
+      const response = await apiRequest("POST", "/api/medical-orders", data);
+      if (!response.ok) {
+        throw new Error("Failed to create medical order");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/medical-orders/patient", id] });
+      toast({
+        title: "Medical order created",
+        description: "The patient's medical order was successfully saved.",
+        variant: "default",
+      });
+      orderForm.reset();
+      setActiveTab("orders");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create medical order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmitOrder = (data: OrderFormValues) => {
+    createOrderMutation.mutate(data);
+  };
+
   // Status badge color utility
   const getStatusBadgeClass = (status: string) => {
     switch (status.toLowerCase()) {
@@ -171,10 +244,11 @@ const PatientEMR = ({ id }: { id: string }) => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="records">Medical Records</TabsTrigger>
           <TabsTrigger value="orders">Medical Orders</TabsTrigger>
           <TabsTrigger value="newRecord">New Record</TabsTrigger>
+          <TabsTrigger value="newOrder">New Order</TabsTrigger>
           <TabsTrigger value="summary">Patient Summary</TabsTrigger>
         </TabsList>
 
@@ -403,6 +477,193 @@ const PatientEMR = ({ id }: { id: string }) => {
                       disabled={createRecordMutation.isPending}
                     >
                       {createRecordMutation.isPending ? "Saving..." : "Save Record"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Create New Order Tab */}
+        <TabsContent value="newOrder">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Medical Order</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...orderForm}>
+                <form onSubmit={orderForm.handleSubmit(onSubmitOrder)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={orderForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter order name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={orderForm.control}
+                      name="orderType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order Type</FormLabel>
+                          <FormControl>
+                            <Select 
+                              value={field.value} 
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="medication">Medication</SelectItem>
+                                <SelectItem value="lab">Laboratory Test</SelectItem>
+                                <SelectItem value="imaging">Imaging</SelectItem>
+                                <SelectItem value="procedure">Procedure</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={orderForm.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="date" 
+                              {...field}
+                              value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={orderForm.control}
+                      name="priority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Priority</FormLabel>
+                          <FormControl>
+                            <Select 
+                              value={field.value} 
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="stat">STAT (Immediate)</SelectItem>
+                                <SelectItem value="urgent">Urgent</SelectItem>
+                                <SelectItem value="routine">Routine</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {orderForm.watch("orderType") === "medication" && (
+                      <>
+                        <FormField
+                          control={orderForm.control}
+                          name="dosage"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Dosage</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. 500mg twice daily" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={orderForm.control}
+                          name="route"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Route</FormLabel>
+                              <FormControl>
+                                <Select 
+                                  value={field.value || ""} 
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select route" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="oral">Oral (PO)</SelectItem>
+                                    <SelectItem value="intravenous">Intravenous (IV)</SelectItem>
+                                    <SelectItem value="intramuscular">Intramuscular (IM)</SelectItem>
+                                    <SelectItem value="subcutaneous">Subcutaneous (SC)</SelectItem>
+                                    <SelectItem value="topical">Topical</SelectItem>
+                                    <SelectItem value="inhalation">Inhalation</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+                    
+                    <div className="col-span-1 md:col-span-2">
+                      <FormField
+                        control={orderForm.control}
+                        name="instructions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Instructions</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter detailed instructions" 
+                                {...field}
+                                className="min-h-20"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        orderForm.reset();
+                        setActiveTab("orders");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={createOrderMutation.isPending}
+                    >
+                      {createOrderMutation.isPending ? "Saving..." : "Create Order"}
                     </Button>
                   </div>
                 </form>
