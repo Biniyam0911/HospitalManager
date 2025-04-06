@@ -799,10 +799,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe Payment Routes
-  app.post("/api/create-payment-intent", requireAuth, async (req, res) => {
+  // Payment Routes
+  app.post("/api/confirm-payment", requireAuth, async (req, res) => {
     try {
-      const { billId } = req.body;
+      const { billId, amount } = req.body;
       
       if (!billId) {
         return res.status(400).json({ message: "Bill ID is required" });
@@ -819,61 +819,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Bill is already paid" });
       }
 
-      // Calculate remaining amount
       const totalAmount = parseFloat(bill.totalAmount);
-      const paidAmount = bill.paidAmount ? parseFloat(bill.paidAmount) : 0;
-      const amountToPay = totalAmount - paidAmount;
+      const currentPaidAmount = bill.paidAmount ? parseFloat(bill.paidAmount) : 0;
+      const newPaidAmount = currentPaidAmount + parseFloat(amount);
 
-      if (amountToPay <= 0) {
-        return res.status(400).json({ message: "Bill is already fully paid" });
-      }
-
-      // Create payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amountToPay * 100), // Convert to cents
-        currency: "usd",
-        metadata: {
-          billId: bill.id.toString(),
-          patientId: bill.patientId.toString(),
-        },
+      // Update the bill
+      const updatedBill = await storage.updateBill(bill.id, {
+        paidAmount: newPaidAmount.toFixed(2),
+        status: Math.abs(newPaidAmount - totalAmount) < 0.01 ? "Paid" : "Partial",
+        paymentMethod: "Direct Payment",
       });
 
-      // Update bill with payment intent ID
-      await storage.updateBill(bill.id, {
-        stripePaymentIntentId: paymentIntent.id,
-        stripePaymentStatus: paymentIntent.status,
-      });
-
-      res.json({
-        clientSecret: paymentIntent.client_secret,
-        billId: bill.id,
-      });
+      res.json(updatedBill);
     } catch (error: any) {
-      console.error("Error creating payment intent:", error);
-      res.status(500).json({ message: error.message || "Failed to create payment intent" });
+      console.error("Error processing payment:", error);
+      res.status(500).json({ message: error.message || "Failed to process payment" });
     }
   });
-
-  app.post("/api/confirm-payment", requireAuth, async (req, res) => {
-    try {
-      const { billId, paymentIntentId } = req.body;
-      
-      if (!billId || !paymentIntentId) {
-        return res.status(400).json({ message: "Bill ID and Payment Intent ID are required" });
-      }
-
-      // Fetch the bill
-      const bill = await storage.getBill(Number(billId));
-      if (!bill) {
-        return res.status(404).json({ message: "Bill not found" });
-      }
-
-      // Verify the payment intent
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      
-      if (paymentIntent.status !== "succeeded") {
-        return res.status(400).json({ message: "Payment has not succeeded" });
-      }
 
       // Calculate the new paid amount
       const totalAmount = parseFloat(bill.totalAmount);
