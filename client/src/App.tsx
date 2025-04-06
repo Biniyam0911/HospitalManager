@@ -1,0 +1,134 @@
+import { Switch, Route, useLocation } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import NotFound from "@/pages/not-found";
+import Dashboard from "@/pages/Dashboard";
+import Patients from "@/pages/patients/Patients";
+import PatientForm from "@/pages/patients/PatientForm";
+import Appointments from "@/pages/appointments/Appointments";
+import AppointmentForm from "@/pages/appointments/AppointmentForm";
+import Staff from "@/pages/staff/Staff";
+import Beds from "@/pages/inpatient/Beds";
+import Inventory from "@/pages/inventory/Inventory";
+import Billing from "@/pages/billing/Billing";
+import Reports from "@/pages/reports/Reports";
+import Login from "@/pages/Login";
+import AppLayout from "@/components/layout/AppLayout";
+import { AuthProvider, useAuth } from "./lib/auth";
+
+// Protected route component
+function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, [key: string]: any }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (isLoading) {
+    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
+
+  return <Component {...rest} />;
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+      
+      <Route path="/">
+        <AppLayout>
+          <ProtectedRoute component={Dashboard} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/patients">
+        <AppLayout>
+          <ProtectedRoute component={Patients} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/patients/new">
+        <AppLayout>
+          <ProtectedRoute component={PatientForm} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/patients/:id">
+        {(params) => (
+          <AppLayout>
+            <ProtectedRoute component={PatientForm} id={params.id} />
+          </AppLayout>
+        )}
+      </Route>
+      
+      <Route path="/appointments">
+        <AppLayout>
+          <ProtectedRoute component={Appointments} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/appointments/new">
+        <AppLayout>
+          <ProtectedRoute component={AppointmentForm} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/appointments/:id">
+        {(params) => (
+          <AppLayout>
+            <ProtectedRoute component={AppointmentForm} id={params.id} />
+          </AppLayout>
+        )}
+      </Route>
+      
+      <Route path="/staff">
+        <AppLayout>
+          <ProtectedRoute component={Staff} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/inpatient/beds">
+        <AppLayout>
+          <ProtectedRoute component={Beds} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/inventory">
+        <AppLayout>
+          <ProtectedRoute component={Inventory} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/billing">
+        <AppLayout>
+          <ProtectedRoute component={Billing} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/reports">
+        <AppLayout>
+          <ProtectedRoute component={Reports} />
+        </AppLayout>
+      </Route>
+      
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
