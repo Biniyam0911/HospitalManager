@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, setLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,14 +44,14 @@ const HR = () => {
           <Button 
               variant="outline" 
               className="border-primary text-primary hover:bg-primary hover:text-white"
-              onClick={() => setLocation("/hr/leave-request")}
+              onClick={() => location.push("/hr/leave-request")}
             >
               Request Leave
             </Button>
             <Button 
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-white"
-              onClick={() => setLocation("/hr/payroll")}
+              onClick={() => location.push("/hr/payroll")}
             >
               Payroll
             </Button>
