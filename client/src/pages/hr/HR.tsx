@@ -42,6 +42,12 @@ const HR = () => {
             <UserPlus className="h-4 w-4 mr-2" />
             Add Employee
           </Button>
+          <Button variant="outline" onClick={() => navigate("/hr/leave-request")}>
+            Request Leave
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/hr/payroll")}>
+            Payroll
+          </Button>
 
           <Dialog open={showAddEmployee} onOpenChange={setShowAddEmployee}>
             <DialogContent>

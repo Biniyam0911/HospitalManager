@@ -242,6 +242,8 @@ function Router() {
       </Route>
       <Route path="/hr/new" component={EmployeeForm} />
       <Route path="/hr/leaves" component={LeaveRequests} />
+      <Route path="/hr/leave-request" component={LeaveRequestForm} />
+      <Route path="/hr/payroll" component={Payroll} />
       <Route component={NotFound} />
     </Switch>
   );
