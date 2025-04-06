@@ -629,6 +629,42 @@ export const insertOrderResultSchema = createInsertSchema(orderResults).omit({
   createdAt: true,
 });
 
+// HR Module
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  department: varchar("department", { length: 100 }).notNull(),
+  position: varchar("position", { length: 100 }).notNull(),
+  joinDate: timestamp("join_date").notNull(),
+  salary: numeric("salary", { precision: 10, scale: 2 }),
+  status: varchar("status", { length: 50 }).notNull().default("active"),
+  emergencyContact: varchar("emergency_contact", { length: 255 }),
+  emergencyPhone: varchar("emergency_phone", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const leaves = pgTable("leaves", {
+  id: serial("id").primaryKey(),
+  employeeId: integer("employee_id").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // sick, vacation, personal
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  reason: text("reason"),
+  approvedBy: integer("approved_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLeaveSchema = createInsertSchema(leaves).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -705,7 +741,7 @@ export type PosTerminal = typeof posTerminals.$inferSelect;
 export type InsertPosTerminal = z.infer<typeof insertPosTerminalSchema>;
 
 export type PosTransaction = typeof posTransactions.$inferSelect;
-export type InsertPosTransaction = z.infer<typeof insertPosTransactionSchema>;
+export type InsertPosTransaction = z.infer<typeofinsertPosTransactionSchema>;
 
 export type PosTransactionItem = typeof posTransactionItems.$inferSelect;
 export type InsertPosTransactionItem = z.infer<typeof insertPosTransactionItemSchema>;
@@ -730,3 +766,33 @@ export type InsertMedicalOrder = z.infer<typeof insertMedicalOrderSchema>;
 
 export type OrderResult = typeof orderResults.$inferSelect;
 export type InsertOrderResult = z.infer<typeof insertOrderResultSchema>;
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+
+export type Leave = typeof leaves.$inferSelect;
+export type InsertLeave = z.infer<typeof insertLeaveSchema>;
+
+// Emergency Cases
+export const emergencyCases = pgTable("emergency_cases", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
+  admissionDate: timestamp("admission_date").notNull(),
+  arrivalTime: timestamp("arrival_time").notNull(),
+  chiefComplaint: text("chief_complaint").notNull(),
+  initialAssessment: text("initial_assessment"),
+  treatmentProvided: text("treatment_provided"),
+  outcome: varchar("outcome", { length: 100 }), // improved, stable, deteriorated, deceased
+  dischargeDate: timestamp("discharge_date"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEmergencyCaseSchema = createInsertSchema(emergencyCases).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type EmergencyCase = typeof emergencyCases.$inferSelect;
+export type InsertEmergencyCase = z.infer<typeof insertEmergencyCaseSchema>;
