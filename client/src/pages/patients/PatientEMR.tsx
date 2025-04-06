@@ -8,6 +8,7 @@ import { z } from "zod";
 import { insertMedicalRecordSchema, insertMedicalOrderSchema } from "@shared/schema.pg";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
+import PrintPrescription from "@/components/PrintPrescription";
 
 import {
   Tabs,
@@ -370,6 +371,22 @@ const PatientEMR = ({ id }: { id: string }) => {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Print Prescription Button */}
+                      {order.orderType === "medication" && (
+                        <div className="mt-4 flex justify-end">
+                          <PrintPrescription 
+                            patient={patient} 
+                            order={order} 
+                            doctor={user?.user || { name: "Doctor", username: "Unknown" }}
+                            hospital={{
+                              name: "Hospital ERP System",
+                              address: "123 Healthcare Ave, Medical District",
+                              phone: "(123) 456-7890"
+                            }}
+                          />
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>
