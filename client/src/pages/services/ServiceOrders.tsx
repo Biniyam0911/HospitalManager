@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { PlusIcon, ClipboardIcon, FileEditIcon, PackageCheckIcon, BanIcon, ReceiptIcon, AlertCircleIcon, RefreshCwIcon } from "lucide-react";
+import { PlusIcon, ClipboardIcon, FileEditIcon, PackageCheckIcon, BanIcon, ReceiptIcon, AlertCircleIcon, RefreshCwIcon, PrinterIcon, ExternalLinkIcon } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 // Service order form schema
@@ -104,6 +104,15 @@ export default function ServiceOrders() {
     queryKey: ['/api/service-orders'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/service-orders");
+      return response.json();
+    },
+  });
+  
+  // Fetch admissions to identify inpatient vs outpatient
+  const { data: admissions } = useQuery({
+    queryKey: ['/api/admissions'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admissions");
       return response.json();
     },
   });
@@ -306,6 +315,218 @@ export default function ServiceOrders() {
     const service = services?.find((s: any) => s.id === serviceId);
     return service ? service.name : `Service #${serviceId}`;
   };
+  
+  // Helper to determine if patient is inpatient or outpatient
+  const getPatientType = (patientId: number, orderDate: string) => {
+    if (!admissions || !orderDate) return "Outpatient";
+    
+    // Convert orderDate to Date object for comparison
+    const orderDateObj = new Date(orderDate);
+    
+    // Check if patient had any active admission during the order date
+    const activeAdmission = admissions.find((admission: any) => {
+      return admission.patientId === patientId && 
+             new Date(admission.admissionDate) <= orderDateObj && 
+             (!admission.dischargeDate || new Date(admission.dischargeDate) >= orderDateObj) &&
+             admission.status !== "cancelled";
+    });
+    
+    return activeAdmission ? "Inpatient" : "Outpatient";
+  };
+  
+  // Function to handle printing an invoice
+  const printInvoice = (order: any) => {
+    // Create a new window for the invoice
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    if (!printWindow) {
+      toast({
+        title: "Error",
+        description: "Please allow pop-ups to print invoices",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Get patient info and items for the invoice
+    const patientInfo = patients.find((p: any) => p.id === order.patientId);
+    const patientName = patientInfo ? `${patientInfo.firstName} ${patientInfo.lastName}` : 'Unknown Patient';
+    const patientType = getPatientType(order.patientId, order.orderDate);
+    
+    // Get total amount
+    const total = parseFloat(order.totalAmount).toFixed(2);
+    
+    // Get order items from the API
+    apiRequest("GET", `/api/service-order-items/order/${order.id}`)
+      .then(res => res.json())
+      .then(orderItemsData => {
+        generateInvoice(order, orderItemsData, patientInfo, patientName, patientType, total, printWindow);
+      })
+      .catch(() => {
+        // If order items failed to load, generate with empty array
+        generateInvoice(order, [], patientInfo, patientName, patientType, total, printWindow);
+      });
+  };
+  
+  // Helper function to generate the invoice HTML and show it in the print window
+  const generateInvoice = (order: any, orderItemsData: any[], patientInfo: any, patientName: string, patientType: string, total: string, printWindow: Window) => {
+    
+    // Generate the invoice HTML
+    const invoiceHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice #${order.id}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+          }
+          .invoice-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+          }
+          .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+          }
+          .invoice-details > div {
+            flex: 1;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background-color: #f2f2f2;
+          }
+          .amount {
+            text-align: right;
+          }
+          .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          .patient-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .inpatient {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+          }
+          .outpatient {
+            background-color: #e8f5e9;
+            color: #1b5e20;
+          }
+          @media print {
+            .no-print {
+              display: none;
+            }
+            button {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-header">
+          <h1>Hospital Invoice</h1>
+          <h2>Service Order #${order.id}</h2>
+          <div class="patient-type ${getPatientType(order.patientId, order.orderDate).toLowerCase()}">
+            ${getPatientType(order.patientId, order.orderDate)}
+          </div>
+        </div>
+        
+        <div class="invoice-details">
+          <div>
+            <h3>Patient Information</h3>
+            <p><strong>Name:</strong> ${patientName}</p>
+            <p><strong>ID:</strong> ${patientInfo && patientInfo.patientId ? patientInfo.patientId : 'N/A'}</p>
+            <p><strong>Date:</strong> ${order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}</p>
+          </div>
+          <div>
+            <h3>Order Information</h3>
+            <p><strong>Status:</strong> ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</p>
+            <p><strong>Doctor:</strong> ${order.doctorId ? getDoctorName(order.doctorId) : 'N/A'}</p>
+            <p><strong>Created By:</strong> ${order.createdBy ? 'Staff #' + order.createdBy : 'System'}</p>
+          </div>
+        </div>
+        
+        <h3>Ordered Services</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orderItemsData.map((item: any) => `
+              <tr>
+                <td>${getServiceName(item.serviceId)}</td>
+                <td>${item.quantity}</td>
+                <td>$${parseFloat(item.unitPrice).toFixed(2)}</td>
+                <td class="amount">$${parseFloat(item.totalPrice).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+            <tr class="total-row">
+              <td colspan="3" class="amount">Total:</td>
+              <td class="amount">$${total}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        ${order.notes ? `
+        <div>
+          <h3>Notes</h3>
+          <p>${order.notes}</p>
+        </div>
+        ` : ''}
+        
+        <div class="footer">
+          <p>Thank you for choosing our hospital. For any questions, please contact billing department.</p>
+        </div>
+        
+        <div class="no-print" style="text-align: center; margin-top: 20px;">
+          <button onclick="window.print();" style="padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Print Invoice
+          </button>
+          <button onclick="window.close();" style="padding: 10px 20px; margin-left: 10px; background: #ccc; border: none; border-radius: 4px; cursor: pointer;">
+            Close
+          </button>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Write the HTML to the new window and trigger print
+    printWindow.document.open();
+    printWindow.document.write(invoiceHTML);
+    printWindow.document.close();
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -433,6 +654,7 @@ export default function ServiceOrders() {
                     <TableRow>
                       <TableHead>Order #</TableHead>
                       <TableHead>Patient</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Total</TableHead>
@@ -451,11 +673,16 @@ export default function ServiceOrders() {
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">{order.id}</TableCell>
                           <TableCell>{getPatientName(order.patientId)}</TableCell>
-                          <TableCell>{formatDate(new Date(order.orderDate))}</TableCell>
+                          <TableCell>
+                            <Badge variant={getPatientType(order.patientId, order.orderDate) === "Inpatient" ? "secondary" : "outline"}>
+                              {getPatientType(order.patientId, order.orderDate)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(order.orderDate)}</TableCell>
                           <TableCell>
                             <StatusBadge status={order.status} />
                           </TableCell>
-                          <TableCell>${parseFloat(order.totalAmount).toFixed(2)}</TableCell>
+                          <TableCell className="font-semibold">${parseFloat(order.totalAmount).toFixed(2)}</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
                               <Button
@@ -520,6 +747,14 @@ export default function ServiceOrders() {
                     <p className="mt-1">{getPatientName(selectedOrder.patientId)}</p>
                   </div>
                   <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Patient Type</h3>
+                    <div className="mt-1">
+                      <Badge variant={getPatientType(selectedOrder.patientId, selectedOrder.orderDate) === "Inpatient" ? "secondary" : "outline"}>
+                        {getPatientType(selectedOrder.patientId, selectedOrder.orderDate)}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
                     <div className="mt-1">
                       <StatusBadge status={selectedOrder.status} />
@@ -527,7 +762,7 @@ export default function ServiceOrders() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Order Date</h3>
-                    <p className="mt-1">{formatDate(new Date(selectedOrder.orderDate))}</p>
+                    <p className="mt-1">{formatDate(selectedOrder.orderDate.toString())}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Doctor</h3>
@@ -684,7 +919,7 @@ export default function ServiceOrders() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orderItems.map((item: any) => (
+                        {orderItems?.map((item: any) => (
                           <TableRow key={item.id}>
                             <TableCell>{getServiceName(item.serviceId)}</TableCell>
                             <TableCell>{item.quantity}</TableCell>
@@ -741,9 +976,9 @@ export default function ServiceOrders() {
                     </>
                   )}
                   {selectedOrder.status === "completed" && (
-                    <Button variant="outline" disabled>
+                    <Button variant="outline" onClick={() => printInvoice(selectedOrder)}>
                       <ReceiptIcon className="mr-2 h-4 w-4" />
-                      Print Receipt
+                      Print Invoice
                     </Button>
                   )}
                   <Button
