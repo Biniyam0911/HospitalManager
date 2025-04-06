@@ -19,18 +19,18 @@ import {
   vehicleAssignments,
   accounts,
   transactions,
-  pos_terminals,
-  pos_transactions,
-  pos_items,
-  clinical_guidelines,
-  decision_support_logs,
+  posTerminals,
+  posTransactions,
+  posTransactionItems,
+  clinicalGuidelines,
+  diagnosticSessions,
   bills,
   billItems,
   dashboardStats,
   resourceUtilization,
   reportTemplates,
   reportExecutions,
-  treatments,
+  treatmentPlans,
   medicalOrders,
   orderResults,
   type User,
@@ -73,12 +73,12 @@ import {
   type InsertPosTerminal,
   type PosTransaction,
   type InsertPosTransaction,
-  type PosItem,
-  type InsertPosItem,
+  type PosTransactionItem,
+  type InsertPosTransactionItem,
   type ClinicalGuideline,
   type InsertClinicalGuideline,
-  type DecisionSupportLog,
-  type InsertDecisionSupportLog,
+  type DiagnosticSession,
+  type InsertDiagnosticSession,
   type Bill,
   type InsertBill,
   type BillItem,
@@ -91,8 +91,8 @@ import {
   type InsertReportTemplate,
   type ReportExecution,
   type InsertReportExecution,
-  type Treatment,
-  type InsertTreatment,
+  type TreatmentPlan as Treatment,
+  type InsertTreatmentPlan as InsertTreatment,
   type MedicalOrder,
   type InsertMedicalOrder,
   type OrderResult,
@@ -284,9 +284,9 @@ export interface IStorage {
   getTodayPosTransactions(): Promise<PosTransaction[]>;
   
   // POS Items
-  getPosItem(id: number): Promise<PosItem | undefined>;
-  createPosItem(item: InsertPosItem): Promise<PosItem>;
-  getPosItemsByTransaction(transactionId: number): Promise<PosItem[]>;
+  getPosItem(id: number): Promise<PosTransactionItem | undefined>;
+  createPosItem(item: InsertPosTransactionItem): Promise<PosTransactionItem>;
+  getPosItemsByTransaction(transactionId: number): Promise<PosTransactionItem[]>;
   
   // Clinical Guidelines
   getClinicalGuideline(id: number): Promise<ClinicalGuideline | undefined>;
@@ -295,11 +295,11 @@ export interface IStorage {
   getAllClinicalGuidelines(): Promise<ClinicalGuideline[]>;
   getActiveClinicalGuidelines(): Promise<ClinicalGuideline[]>;
   
-  // Decision Support Logs
-  getDecisionSupportLog(id: number): Promise<DecisionSupportLog | undefined>;
-  createDecisionSupportLog(log: InsertDecisionSupportLog): Promise<DecisionSupportLog>;
-  getDecisionSupportLogsByPatient(patientId: number): Promise<DecisionSupportLog[]>;
-  getDecisionSupportLogsByDoctor(doctorId: number): Promise<DecisionSupportLog[]>;
+  // Diagnostic Sessions
+  getDecisionSupportLog(id: number): Promise<DiagnosticSession | undefined>;
+  createDecisionSupportLog(log: InsertDiagnosticSession): Promise<DiagnosticSession>;
+  getDecisionSupportLogsByPatient(patientId: number): Promise<DiagnosticSession[]>;
+  getDecisionSupportLogsByDoctor(doctorId: number): Promise<DiagnosticSession[]>;
   
   // Report Templates
   getReportTemplate(id: number): Promise<ReportTemplate | undefined>;
@@ -365,9 +365,9 @@ export class MemStorage implements IStorage {
   private transactions: Map<number, Transaction>;
   private posTerminals: Map<number, PosTerminal>;
   private posTransactions: Map<number, PosTransaction>;
-  private posItems: Map<number, PosItem>;
+  private posItems: Map<number, PosTransactionItem>;
   private clinicalGuidelines: Map<number, ClinicalGuideline>;
-  private decisionSupportLogs: Map<number, DecisionSupportLog>;
+  private decisionSupportLogs: Map<number, DiagnosticSession>;
   private bills: Map<number, Bill>;
   private billItems: Map<number, BillItem>;
   private dashboardStats: DashboardStat | undefined;
@@ -1606,14 +1606,14 @@ export class MemStorage implements IStorage {
   }
   
   // Point of Sale Items
-  async getPosItem(id: number): Promise<PosItem | undefined> {
+  async getPosItem(id: number): Promise<PosTransactionItem | undefined> {
     return this.posItems.get(id);
   }
 
-  async createPosItem(item: InsertPosItem): Promise<PosItem> {
+  async createPosItem(item: InsertPosTransactionItem): Promise<PosTransactionItem> {
     const id = this.currentIds.posItems++;
     const createdAt = new Date();
-    const newItem: PosItem = { ...item, id, createdAt };
+    const newItem: PosTransactionItem = { ...item, id, createdAt };
     this.posItems.set(id, newItem);
     
     // Update inventory if inventory tracking is enabled
@@ -1630,9 +1630,9 @@ export class MemStorage implements IStorage {
     return newItem;
   }
 
-  async getPosItemsByTransaction(posTransactionId: number): Promise<PosItem[]> {
+  async getPosItemsByTransaction(posTransactionId: number): Promise<PosTransactionItem[]> {
     return Array.from(this.posItems.values()).filter(
-      (item) => item.posTransactionId === posTransactionId
+      (item) => item.transactionId === posTransactionId
     );
   }
   
@@ -1674,26 +1674,26 @@ export class MemStorage implements IStorage {
     );
   }
   
-  // Decision Support Logs
-  async getDecisionSupportLog(id: number): Promise<DecisionSupportLog | undefined> {
+  // Diagnostic Sessions
+  async getDecisionSupportLog(id: number): Promise<DiagnosticSession | undefined> {
     return this.decisionSupportLogs.get(id);
   }
 
-  async createDecisionSupportLog(log: InsertDecisionSupportLog): Promise<DecisionSupportLog> {
+  async createDecisionSupportLog(log: InsertDiagnosticSession): Promise<DiagnosticSession> {
     const id = this.currentIds.decisionSupportLogs++;
     const createdAt = new Date();
-    const newLog: DecisionSupportLog = { ...log, id, createdAt };
+    const newLog: DiagnosticSession = { ...log, id, createdAt };
     this.decisionSupportLogs.set(id, newLog);
     return newLog;
   }
 
-  async getDecisionSupportLogsByPatient(patientId: number): Promise<DecisionSupportLog[]> {
+  async getDecisionSupportLogsByPatient(patientId: number): Promise<DiagnosticSession[]> {
     return Array.from(this.decisionSupportLogs.values()).filter(
       (log) => log.patientId === patientId
     );
   }
 
-  async getDecisionSupportLogsByDoctor(doctorId: number): Promise<DecisionSupportLog[]> {
+  async getDecisionSupportLogsByDoctor(doctorId: number): Promise<DiagnosticSession[]> {
     return Array.from(this.decisionSupportLogs.values()).filter(
       (log) => log.doctorId === doctorId
     );
