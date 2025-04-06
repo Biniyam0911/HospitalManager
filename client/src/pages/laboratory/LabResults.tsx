@@ -92,7 +92,7 @@ export default function LabResults() {
       let url = "/api/lab-results";
       const params = [];
       
-      if (selectedLabSystem) {
+      if (selectedLabSystem && selectedLabSystem !== 'all') {
         params.push(`labSystemId=${selectedLabSystem}`);
       }
       
@@ -199,7 +199,7 @@ export default function LabResults() {
                   <SelectValue placeholder="Lab System" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Lab Systems</SelectItem>
+                  <SelectItem value="all">All Lab Systems</SelectItem>
                   {labSystems?.map((system: any) => (
                     <SelectItem key={system.id} value={system.id.toString()}>
                       {system.name}
