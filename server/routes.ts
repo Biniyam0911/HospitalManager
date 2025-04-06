@@ -439,6 +439,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service Routes
+  app.get("/api/services", requireAuth, async (req, res) => {
+    try {
+      if (req.query.active === 'true') {
+        const services = await storage.getActiveServices();
+        return res.json(services);
+      }
+      const services = await storage.getAllServices();
+      res.json(services);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/services/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const service = await storage.getService(id);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      // Get current price version
+      const currentPriceVersion = await storage.getCurrentServicePriceVersion(id);
+      
+      res.json({
+        ...service,
+        currentPrice: currentPriceVersion
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/services", requireAuth, async (req, res) => {
+    try {
+      const serviceData = req.body;
+      
+      // Extract price data for price version creation
+      const { price, effectiveDate, year, ...serviceInsertData } = serviceData;
+      
+      // Create the service first
+      const newService = await storage.createService(serviceInsertData);
+      
+      // If price data is provided, create initial price version
+      if (price) {
+        const priceVersionData = {
+          serviceId: newService.id,
+          price: price.toString(),
+          effectiveDate: effectiveDate || new Date(),
+          year: year || new Date().getFullYear()
+        };
+        
+        await storage.createServicePriceVersion(priceVersionData);
+      }
+      
+      // Get the current price version after creating
+      const currentPriceVersion = await storage.getCurrentServicePriceVersion(newService.id);
+      
+      res.status(201).json({
+        ...newService,
+        currentPrice: currentPriceVersion
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/services/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const serviceData = req.body;
+      
+      // Extract price data for price version update if provided
+      const { price, effectiveDate, year, expiryDate, ...serviceUpdateData } = serviceData;
+      
+      // Update the service
+      const updatedService = await storage.updateService(id, serviceUpdateData);
+      if (!updatedService) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      // If price data is provided, create a new price version
+      let currentPriceVersion;
+      if (price) {
+        const priceVersionData = {
+          serviceId: id,
+          price: price.toString(),
+          effectiveDate: effectiveDate || new Date(),
+          year: year || new Date().getFullYear(),
+          expiryDate: expiryDate || null
+        };
+        
+        await storage.createServicePriceVersion(priceVersionData);
+        currentPriceVersion = await storage.getCurrentServicePriceVersion(id);
+      } else {
+        currentPriceVersion = await storage.getCurrentServicePriceVersion(id);
+      }
+      
+      res.json({
+        ...updatedService,
+        currentPrice: currentPriceVersion
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Service Price Version Routes
+  app.get("/api/service-price-versions/service/:serviceId", requireAuth, async (req, res) => {
+    try {
+      const serviceId = Number(req.params.serviceId);
+      const priceVersions = await storage.getServicePriceVersionsByService(serviceId);
+      res.json(priceVersions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-price-versions/year/:year", requireAuth, async (req, res) => {
+    try {
+      const year = Number(req.params.year);
+      const priceVersions = await storage.getServicePriceVersionsByYear(year);
+      res.json(priceVersions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-price-versions/current/:serviceId", requireAuth, async (req, res) => {
+    try {
+      const serviceId = Number(req.params.serviceId);
+      const priceVersion = await storage.getCurrentServicePriceVersion(serviceId);
+      
+      if (!priceVersion) {
+        return res.status(404).json({ message: "No current price version found for this service" });
+      }
+      
+      res.json(priceVersion);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-price-versions", requireAuth, async (req, res) => {
+    try {
+      const priceVersionData = req.body;
+      const newPriceVersion = await storage.createServicePriceVersion(priceVersionData);
+      res.status(201).json(newPriceVersion);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // Billing Routes
   app.get("/api/bills", requireAuth, async (req, res) => {
     try {

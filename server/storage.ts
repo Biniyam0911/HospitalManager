@@ -10,6 +10,7 @@ import {
   inventoryItems,
   inventoryTransfers,
   services,
+  servicePriceVersions,
   servicePackages,
   servicePackageItems,
   vehicles,
@@ -52,6 +53,8 @@ import {
   type InsertInventoryTransfer,
   type Service,
   type InsertService,
+  type ServicePriceVersion,
+  type InsertServicePriceVersion,
   type ServicePackage,
   type InsertServicePackage,
   type ServicePackageItem,
@@ -192,6 +195,13 @@ export interface IStorage {
   getAllServices(): Promise<Service[]>;
   getActiveServices(): Promise<Service[]>;
   
+  // Service Price Versions
+  getServicePriceVersion(id: number): Promise<ServicePriceVersion | undefined>;
+  createServicePriceVersion(priceVersion: InsertServicePriceVersion): Promise<ServicePriceVersion>;
+  getServicePriceVersionsByService(serviceId: number): Promise<ServicePriceVersion[]>;
+  getServicePriceVersionsByYear(year: number): Promise<ServicePriceVersion[]>;
+  getCurrentServicePriceVersion(serviceId: number): Promise<ServicePriceVersion | undefined>;
+  
   // Service Packages
   getServicePackage(id: number): Promise<ServicePackage | undefined>;
   createServicePackage(pkg: InsertServicePackage): Promise<ServicePackage>;
@@ -321,6 +331,7 @@ export class MemStorage implements IStorage {
   private inventoryItems: Map<number, InventoryItem>;
   private inventoryTransfers: Map<number, InventoryTransfer>;
   private services: Map<number, Service>;
+  private servicePriceVersions: Map<number, ServicePriceVersion>;
   private servicePackages: Map<number, ServicePackage>;
   private servicePackageItems: Map<number, ServicePackageItem>;
   private vehicles: Map<number, Vehicle>;
@@ -354,6 +365,7 @@ export class MemStorage implements IStorage {
     inventoryItems: number;
     inventoryTransfers: number;
     services: number;
+    servicePriceVersions: number;
     servicePackages: number;
     servicePackageItems: number;
     vehicles: number;
@@ -388,6 +400,7 @@ export class MemStorage implements IStorage {
     this.inventoryItems = new Map();
     this.inventoryTransfers = new Map();
     this.services = new Map();
+    this.servicePriceVersions = new Map();
     this.servicePackages = new Map();
     this.servicePackageItems = new Map();
     this.vehicles = new Map();
@@ -419,6 +432,7 @@ export class MemStorage implements IStorage {
       inventoryItems: 1,
       inventoryTransfers: 1,
       services: 1,
+      servicePriceVersions: 1,
       servicePackages: 1,
       servicePackageItems: 1,
       vehicles: 1,
@@ -982,6 +996,65 @@ export class MemStorage implements IStorage {
     return Array.from(this.services.values()).filter(
       (service) => service.status === "active"
     );
+  }
+  
+  // Service Price Versions
+  async getServicePriceVersion(id: number): Promise<ServicePriceVersion | undefined> {
+    return this.servicePriceVersions.get(id);
+  }
+
+  async createServicePriceVersion(priceVersion: InsertServicePriceVersion): Promise<ServicePriceVersion> {
+    const id = this.currentIds.servicePriceVersions++;
+    const createdAt = new Date();
+    const newPriceVersion: ServicePriceVersion = { ...priceVersion, id, createdAt };
+    
+    // If this is a new current price version, expire the old ones
+    if (!priceVersion.expiryDate) {
+      // Find all current price versions for this service (those without expiry date)
+      const currentVersions = Array.from(this.servicePriceVersions.values()).filter(
+        pv => pv.serviceId === priceVersion.serviceId && !pv.expiryDate
+      );
+      
+      // Expire them as of yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      for (const version of currentVersions) {
+        this.servicePriceVersions.set(version.id, {
+          ...version,
+          expiryDate: yesterday
+        });
+      }
+    }
+    
+    this.servicePriceVersions.set(id, newPriceVersion);
+    return newPriceVersion;
+  }
+
+  async getServicePriceVersionsByService(serviceId: number): Promise<ServicePriceVersion[]> {
+    return Array.from(this.servicePriceVersions.values()).filter(
+      pv => pv.serviceId === serviceId
+    ).sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime());
+  }
+
+  async getServicePriceVersionsByYear(year: number): Promise<ServicePriceVersion[]> {
+    return Array.from(this.servicePriceVersions.values()).filter(
+      pv => pv.year === year
+    );
+  }
+
+  async getCurrentServicePriceVersion(serviceId: number): Promise<ServicePriceVersion | undefined> {
+    const today = new Date();
+    
+    // Find price versions that are effective today (effectiveDate <= today && (expiryDate == null || expiryDate >= today))
+    const currentVersions = Array.from(this.servicePriceVersions.values()).filter(
+      pv => pv.serviceId === serviceId && 
+            pv.effectiveDate <= today && 
+            (!pv.expiryDate || pv.expiryDate >= today)
+    );
+    
+    // Sort by effectiveDate descending and return the most recent
+    return currentVersions.sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime())[0];
   }
   
   // Service Packages

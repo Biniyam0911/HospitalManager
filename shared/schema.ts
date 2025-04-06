@@ -255,7 +255,6 @@ export const services = pgTable("services", {
   category: text("category").notNull(), // consultation, procedure, test, etc.
   description: text("description"),
   duration: integer("duration"), // in minutes
-  price: numeric("price").notNull(),
   status: text("status").notNull().default("active"), // active, inactive
   requiresDoctor: boolean("requires_doctor").default(false),
   requiresAppointment: boolean("requires_appointment").default(false),
@@ -264,6 +263,24 @@ export const services = pgTable("services", {
 });
 
 export const insertServiceSchema = createInsertSchema(services).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Service Price Versions - to track price changes over time
+export const servicePriceVersions = pgTable("service_price_versions", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").notNull(),
+  price: numeric("price").notNull(),
+  effectiveDate: timestamp("effective_date").notNull(), // When this price becomes effective
+  expiryDate: timestamp("expiry_date"), // When this price expires (null if current)
+  year: integer("year").notNull(), // The year this price is for
+  notes: text("notes"), // Any notes about this price change
+  createdBy: integer("created_by").notNull(), // User who created this price version
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertServicePriceVersionSchema = createInsertSchema(servicePriceVersions).omit({
   id: true,
   createdAt: true,
 });
@@ -576,6 +593,9 @@ export type InsertBillItem = z.infer<typeof insertBillItemSchema>;
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
+
+export type ServicePriceVersion = typeof servicePriceVersions.$inferSelect;
+export type InsertServicePriceVersion = z.infer<typeof insertServicePriceVersionSchema>;
 
 export type ServicePackage = typeof servicePackages.$inferSelect;
 export type InsertServicePackage = z.infer<typeof insertServicePackageSchema>;
