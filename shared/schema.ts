@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, boolean, jsonb, numeric, serial } from "drizzle-orm/pg-core";
+import { pgTable, varchar, integer, timestamp, boolean, jsonb, numeric, serial, text } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -20,8 +20,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
 });
 
 // Patients
-export const patients = mysqlTable("patients", {
-  id: int("id").primaryKey().autoincrement(),
+export const patients = pgTable("patients", {
+  id: serial("id").primaryKey(),
   patientId: varchar("patient_id", { length: 50 }).notNull().unique(),
   firstName: varchar("first_name", { length: 255 }).notNull(),
   lastName: varchar("last_name", { length: 255 }).notNull(),
@@ -41,12 +41,12 @@ export const insertPatientSchema = createInsertSchema(patients).omit({
 });
 
 // Appointments
-export const appointments = mysqlTable("appointments", {
-  id: int("id").primaryKey().autoincrement(),
-  patientId: int("patient_id").notNull(),
-  doctorId: int("doctor_id").notNull(),
+export const appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
   date: timestamp("date").notNull(),
-  duration: int("duration").notNull(), // in minutes
+  duration: integer("duration").notNull(), // in minutes
   type: varchar("type", { length: 50 }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("scheduled"),
   notes: varchar("notes", { length: 1000 }),
@@ -59,15 +59,15 @@ export const insertAppointmentSchema = createInsertSchema(appointments).omit({
 });
 
 // Medical Records (SOAP format)
-export const medicalRecords = mysqlTable("medical_records", {
-  id: int("id").primaryKey().autoincrement(),
-  patientId: int("patient_id").notNull(),
-  doctorId: int("doctor_id").notNull(),
+export const medicalRecords = pgTable("medical_records", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
   date: timestamp("date").defaultNow().notNull(),
-  subjective: varchar("subjective", { length: 2000 }), // Patient's symptoms and concerns
-  objective: varchar("objective", { length: 2000 }), // Clinical observations
-  assessment: varchar("assessment", { length: 2000 }), // Diagnosis
-  plan: varchar("plan", { length: 2000 }), // Treatment plan
+  subjective: text("subjective"), // Patient's symptoms and concerns
+  objective: text("objective"), // Clinical observations
+  assessment: text("assessment"), // Diagnosis
+  plan: text("plan"), // Treatment plan
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -77,10 +77,10 @@ export const insertMedicalRecordSchema = createInsertSchema(medicalRecords).omit
 });
 
 // Beds
-export const beds = mysqlTable("beds", {
-  id: int("id").primaryKey().autoincrement(),
+export const beds = pgTable("beds", {
+  id: serial("id").primaryKey(),
   bedNumber: varchar("bed_number", { length: 50 }).notNull().unique(),
-  wardId: int("ward_id").notNull(),
+  wardId: integer("ward_id").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("available"), // available, occupied, maintenance
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -91,11 +91,11 @@ export const insertBedSchema = createInsertSchema(beds).omit({
 });
 
 // Wards
-export const wards = mysqlTable("wards", {
-  id: int("id").primaryKey().autoincrement(),
+export const wards = pgTable("wards", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // general, intensive care, pediatric, etc.
-  capacity: int("capacity").notNull(),
+  capacity: integer("capacity").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -105,16 +105,16 @@ export const insertWardSchema = createInsertSchema(wards).omit({
 });
 
 // Admissions
-export const admissions = mysqlTable("admissions", {
-  id: int("id").primaryKey().autoincrement(),
-  patientId: int("patient_id").notNull(),
-  bedId: int("bed_id").notNull(),
-  doctorId: int("doctor_id").notNull(),
+export const admissions = pgTable("admissions", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  bedId: integer("bed_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
   admissionDate: timestamp("admission_date").notNull(),
   dischargeDate: timestamp("discharge_date"),
-  diagnosis: varchar("diagnosis", { length: 1000 }),
+  diagnosis: text("diagnosis"),
   status: varchar("status", { length: 50 }).notNull().default("active"), // active, discharged
-  deposit: decimal("deposit", { precision: 10, scale: 2 }).default("0"),
+  deposit: numeric("deposit", { precision: 10, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -124,12 +124,12 @@ export const insertAdmissionSchema = createInsertSchema(admissions).omit({
 });
 
 // Pharmacy Stores
-export const pharmacyStores = mysqlTable("pharmacy_stores", {
-  id: int("id").primaryKey().autoincrement(),
+export const pharmacyStores = pgTable("pharmacy_stores", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
   location: varchar("location", { length: 255 }).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // main, satellite, emergency, outpatient
-  manager: int("manager").notNull(), // user ID of the pharmacy manager
+  manager: integer("manager").notNull(), // user ID of the pharmacy manager
   status: varchar("status", { length: 50 }).notNull().default("active"), // active, inactive, under maintenance
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -140,16 +140,16 @@ export const insertPharmacyStoreSchema = createInsertSchema(pharmacyStores).omit
 });
 
 // Inventory Items
-export const inventoryItems = mysqlTable("inventory_items", {
-  id: int("id").primaryKey().autoincrement(),
+export const inventoryItems = pgTable("inventory_items", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   category: varchar("category", { length: 100 }).notNull(), // medicine, equipment, supplies
-  storeId: int("store_id"), // optional relation to pharmacy store
-  quantity: int("quantity").notNull().default(0),
+  storeId: integer("store_id"), // optional relation to pharmacy store
+  quantity: integer("quantity").notNull().default(0),
   unit: varchar("unit", { length: 50 }).notNull(), // box, piece, bottle, etc.
-  reorderLevel: int("reorder_level").notNull(),
+  reorderLevel: integer("reorder_level").notNull(),
   location: varchar("location", { length: 255 }).notNull(), // warehouse, pharmacy, etc.
-  cost: decimal("cost", { precision: 10, scale: 2 }).notNull(),
+  cost: numeric("cost", { precision: 10, scale: 2 }).notNull(),
   expiryDate: timestamp("expiry_date"), // for medicines
   batchNumber: varchar("batch_number", { length: 100 }), // for medicines
   manufacturer: varchar("manufacturer", { length: 255 }),
@@ -162,18 +162,18 @@ export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit
 });
 
 // Inventory Transfers (between stores)
-export const inventoryTransfers = mysqlTable("inventory_transfers", {
-  id: int("id").primaryKey().autoincrement(),
-  itemId: int("item_id").notNull(),
-  sourceStoreId: int("source_store_id").notNull(),
-  destinationStoreId: int("destination_store_id").notNull(),
-  quantity: int("quantity").notNull(),
+export const inventoryTransfers = pgTable("inventory_transfers", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id").notNull(),
+  sourceStoreId: integer("source_store_id").notNull(),
+  destinationStoreId: integer("destination_store_id").notNull(),
+  quantity: integer("quantity").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, completed, cancelled
   transferDate: timestamp("transfer_date").defaultNow().notNull(),
   completedDate: timestamp("completed_date"),
-  initiatedBy: int("initiated_by").notNull(), // user ID
-  approvedBy: int("approved_by"), // user ID
-  notes: varchar("notes", { length: 1000 }),
+  initiatedBy: integer("initiated_by").notNull(), // user ID
+  approvedBy: integer("approved_by"), // user ID
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -183,11 +183,11 @@ export const insertInventoryTransferSchema = createInsertSchema(inventoryTransfe
 });
 
 // Billing
-export const bills = mysqlTable("bills", {
-  id: int("id").primaryKey().autoincrement(),
-  patientId: int("patient_id").notNull(),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+export const bills = pgTable("bills", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+  paidAmount: numeric("paid_amount", { precision: 10, scale: 2 }).notNull().default("0"),
   status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, paid, partial
   billDate: timestamp("bill_date").defaultNow().notNull(),
   dueDate: timestamp("due_date"),
@@ -203,13 +203,13 @@ export const insertBillSchema = createInsertSchema(bills).omit({
 });
 
 // Bill Items
-export const billItems = mysqlTable("bill_items", {
-  id: int("id").primaryKey().autoincrement(),
-  billId: int("bill_id").notNull(),
+export const billItems = pgTable("bill_items", {
+  id: serial("id").primaryKey(),
+  billId: integer("bill_id").notNull(),
   description: varchar("description", { length: 255 }).notNull(),
-  quantity: int("quantity").notNull().default(1),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: numeric("total_price", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -219,16 +219,16 @@ export const insertBillItemSchema = createInsertSchema(billItems).omit({
 });
 
 // Dashboard Stats
-export const dashboardStats = mysqlTable("dashboard_stats", {
-  id: int("id").primaryKey().autoincrement(),
-  totalPatients: int("total_patients").notNull(),
-  todayAppointments: int("today_appointments").notNull(),
-  availableBeds: int("available_beds").notNull(),
-  totalBeds: int("total_beds").notNull(),
-  todayRevenue: decimal("today_revenue", { precision: 10, scale: 2 }).notNull(),
-  patientGrowth: decimal("patient_growth", { precision: 10, scale: 2 }).notNull(),
-  appointmentChange: decimal("appointment_change", { precision: 10, scale: 2 }).notNull(),
-  revenueGrowth: decimal("revenue_growth", { precision: 10, scale: 2 }).notNull(),
+export const dashboardStats = pgTable("dashboard_stats", {
+  id: serial("id").primaryKey(),
+  totalPatients: integer("total_patients").notNull(),
+  todayAppointments: integer("today_appointments").notNull(),
+  availableBeds: integer("available_beds").notNull(),
+  totalBeds: integer("total_beds").notNull(),
+  todayRevenue: numeric("today_revenue", { precision: 10, scale: 2 }).notNull(),
+  patientGrowth: numeric("patient_growth", { precision: 10, scale: 2 }).notNull(),
+  appointmentChange: numeric("appointment_change", { precision: 10, scale: 2 }).notNull(),
+  revenueGrowth: numeric("revenue_growth", { precision: 10, scale: 2 }).notNull(),
   date: timestamp("date").defaultNow().notNull(),
 });
 
@@ -237,13 +237,13 @@ export const insertDashboardStatSchema = createInsertSchema(dashboardStats).omit
 });
 
 // Resource Utilization
-export const resourceUtilization = mysqlTable("resource_utilization", {
-  id: int("id").primaryKey().autoincrement(),
-  bedUtilization: decimal("bed_utilization", { precision: 10, scale: 2 }).notNull(),
-  staffAllocation: decimal("staff_allocation", { precision: 10, scale: 2 }).notNull(),
-  emergencyCapacity: decimal("emergency_capacity", { precision: 10, scale: 2 }).notNull(),
-  operatingRoomUsage: decimal("operating_room_usage", { precision: 10, scale: 2 }).notNull(),
-  pharmacyInventory: decimal("pharmacy_inventory", { precision: 10, scale: 2 }).notNull(),
+export const resourceUtilization = pgTable("resource_utilization", {
+  id: serial("id").primaryKey(),
+  bedUtilization: numeric("bed_utilization", { precision: 10, scale: 2 }).notNull(),
+  staffAllocation: numeric("staff_allocation", { precision: 10, scale: 2 }).notNull(),
+  emergencyCapacity: numeric("emergency_capacity", { precision: 10, scale: 2 }).notNull(),
+  operatingRoomUsage: numeric("operating_room_usage", { precision: 10, scale: 2 }).notNull(),
+  pharmacyInventory: numeric("pharmacy_inventory", { precision: 10, scale: 2 }).notNull(),
   date: timestamp("date").defaultNow().notNull(),
 });
 
@@ -252,12 +252,12 @@ export const insertResourceUtilizationSchema = createInsertSchema(resourceUtiliz
 });
 
 // Service Management
-export const services = mysqlTable("services", {
-  id: int("id").primaryKey().autoincrement(),
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   category: varchar("category", { length: 100 }).notNull(), // consultation, procedure, test, etc.
-  description: varchar("description", { length: 1000 }),
-  duration: int("duration"), // in minutes
+  description: text("description"),
+  duration: integer("duration"), // in minutes
   status: varchar("status", { length: 50 }).notNull().default("active"), // active, inactive
   requiresDoctor: boolean("requires_doctor").default(false),
   requiresAppointment: boolean("requires_appointment").default(false),
@@ -271,15 +271,15 @@ export const insertServiceSchema = createInsertSchema(services).omit({
 });
 
 // Service Price Versions - to track price changes over time
-export const servicePriceVersions = mysqlTable("service_price_versions", {
-  id: int("id").primaryKey().autoincrement(),
-  serviceId: int("service_id").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+export const servicePriceVersions = pgTable("service_price_versions", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   effectiveDate: timestamp("effective_date").notNull(), // When this price becomes effective
   expiryDate: timestamp("expiry_date"), // When this price expires (null if current)
-  year: int("year").notNull(), // The year this price is for
-  notes: varchar("notes", { length: 1000 }), // Any notes about this price change
-  createdBy: int("created_by").notNull(), // User who created this price version
+  year: integer("year").notNull(), // The year this price is for
+  notes: text("notes"), // Any notes about this price change
+  createdBy: integer("created_by").notNull(), // User who created this price version
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -289,11 +289,11 @@ export const insertServicePriceVersionSchema = createInsertSchema(servicePriceVe
 });
 
 // Service Packages
-export const servicePackages = mysqlTable("service_packages", {
-  id: int("id").primaryKey().autoincrement(),
+export const servicePackages = pgTable("service_packages", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  description: varchar("description", { length: 1000 }),
-  discountPercentage: decimal("discount_percentage", { precision: 5, scale: 2 }).default("0"),
+  description: text("description"),
+  discountPercentage: numeric("discount_percentage", { precision: 5, scale: 2 }).default("0"),
   status: varchar("status", { length: 50 }).notNull().default("active"), // active, inactive
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -304,11 +304,11 @@ export const insertServicePackageSchema = createInsertSchema(servicePackages).om
 });
 
 // Service Package Items
-export const servicePackageItems = mysqlTable("service_package_items", {
-  id: int("id").primaryKey().autoincrement(),
-  packageId: int("package_id").notNull(),
-  serviceId: int("service_id").notNull(),
-  quantity: int("quantity").notNull().default(1),
+export const servicePackageItems = pgTable("service_package_items", {
+  id: serial("id").primaryKey(),
+  packageId: integer("package_id").notNull(),
+  serviceId: integer("service_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -318,13 +318,13 @@ export const insertServicePackageItemSchema = createInsertSchema(servicePackageI
 });
 
 // Fleet Management
-export const vehicles = mysqlTable("vehicles", {
-  id: int("id").primaryKey().autoincrement(),
+export const vehicles = pgTable("vehicles", {
+  id: serial("id").primaryKey(),
   vehicleNumber: varchar("vehicle_number", { length: 50 }).notNull().unique(),
   type: varchar("type", { length: 50 }).notNull(), // ambulance, delivery, staff transport
   model: varchar("model", { length: 100 }).notNull(),
-  year: int("year").notNull(),
-  capacity: int("capacity"), // number of passengers
+  year: integer("year").notNull(),
+  capacity: integer("capacity"), // number of passengers
   status: varchar("status", { length: 50 }).notNull().default("available"), // available, in-use, maintenance
   fuelType: varchar("fuel_type", { length: 50 }).notNull(),
   lastMaintenance: timestamp("last_maintenance"),
@@ -338,16 +338,16 @@ export const insertVehicleSchema = createInsertSchema(vehicles).omit({
 });
 
 // Vehicle Assignments
-export const vehicleAssignments = mysqlTable("vehicle_assignments", {
-  id: int("id").primaryKey().autoincrement(),
-  vehicleId: int("vehicle_id").notNull(),
-  assignedTo: int("assigned_to").notNull(), // user ID of driver
+export const vehicleAssignments = pgTable("vehicle_assignments", {
+  id: serial("id").primaryKey(),
+  vehicleId: integer("vehicle_id").notNull(),
+  assignedTo: integer("assigned_to").notNull(), // user ID of driver
   purpose: varchar("purpose", { length: 255 }).notNull(),
-  patientId: int("patient_id"), // optional, for ambulance services
+  patientId: integer("patient_id"), // optional, for ambulance services
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
   status: varchar("status", { length: 50 }).notNull().default("scheduled"), // scheduled, in-progress, completed, cancelled
-  notes: varchar("notes", { length: 1000 }),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -357,13 +357,13 @@ export const insertVehicleAssignmentSchema = createInsertSchema(vehicleAssignmen
 });
 
 // Accounting Module
-export const accounts = mysqlTable("accounts", {
-  id: int("id").primaryKey().autoincrement(),
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
   accountNumber: varchar("account_number", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // asset, liability, equity, revenue, expense
   category: varchar("category", { length: 100 }).notNull(), // cash, bank, receivable, payable, etc.
-  balance: decimal("balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  balance: numeric("balance", { precision: 15, scale: 2 }).notNull().default("0"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -374,19 +374,19 @@ export const insertAccountSchema = createInsertSchema(accounts).omit({
 });
 
 // Transactions
-export const transactions = mysqlTable("transactions", {
-  id: int("id").primaryKey().autoincrement(),
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
   transactionDate: timestamp("transaction_date").notNull(),
   reference: varchar("reference", { length: 100 }).notNull(),
-  description: varchar("description", { length: 1000 }),
-  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  description: text("description"),
+  amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // debit, credit
+  accountId: integer("account_id").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, approved, rejected
-  approvedBy: int("approved_by"), // user ID
-  createdBy: int("created_by").notNull(), // user ID
-  accountId: int("account_id").notNull(),
-  relatedEntityType: varchar("related_entity_type", { length: 100 }), // patient, supplier, etc.
-  relatedEntityId: int("related_entity_id"), // ID of the related entity
+  createdBy: integer("created_by").notNull(), // user ID
+  approvedBy: integer("approved_by"), // user ID
+  relatedEntityType: varchar("related_entity_type", { length: 100 }), // bill, service_order, etc.
+  relatedEntityId: integer("related_entity_id"), // the ID of the related entity
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -396,16 +396,16 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 });
 
 // Service Orders
-export const serviceOrders = mysqlTable("service_orders", {
-  id: int("id").primaryKey().autoincrement(),
-  patientId: int("patient_id").notNull(),
-  doctorId: int("doctor_id"), // Optional if service doesn't require a doctor
+export const serviceOrders = pgTable("service_orders", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id"), // optional for self-service orders
+  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, processing, completed, cancelled
+  notes: text("notes"),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }),
+  billId: integer("bill_id"), // link to the bill
+  createdBy: integer("created_by").notNull(), // user ID who created the order
   orderDate: timestamp("order_date").defaultNow().notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, completed, cancelled
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
-  billId: int("bill_id"), // Reference to bill if billed
-  notes: varchar("notes", { length: 1000 }),
-  createdBy: int("created_by").notNull(), // User who created the order
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -415,16 +415,16 @@ export const insertServiceOrderSchema = createInsertSchema(serviceOrders).omit({
 });
 
 // Service Order Items
-export const serviceOrderItems = mysqlTable("service_order_items", {
-  id: int("id").primaryKey().autoincrement(),
-  serviceOrderId: int("service_order_id").notNull(),
-  serviceId: int("service_id").notNull(),
-  servicePriceVersionId: int("service_price_version_id").notNull(), // Reference to price at time of order
-  quantity: int("quantity").notNull().default(1),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, completed, cancelled
-  notes: varchar("notes", { length: 1000 }),
+export const serviceOrderItems = pgTable("service_order_items", {
+  id: serial("id").primaryKey(),
+  serviceOrderId: integer("service_order_id").notNull(),
+  serviceId: integer("service_id").notNull(),
+  servicePriceVersionId: integer("service_price_version_id").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, processing, completed, cancelled
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: numeric("total_price", { precision: 10, scale: 2 }).notNull(),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -434,11 +434,11 @@ export const insertServiceOrderItemSchema = createInsertSchema(serviceOrderItems
 });
 
 // POS Terminals
-export const posTerminals = mysqlTable("pos_terminals", {
-  id: int("id").primaryKey().autoincrement(),
-  terminalId: varchar("terminal_id", { length: 50 }).notNull(),
+export const posTerminals = pgTable("pos_terminals", {
+  id: serial("id").primaryKey(),
+  terminalId: varchar("terminal_id", { length: 100 }).notNull().unique(),
   location: varchar("location", { length: 255 }).notNull(),
-  assignedTo: int("assigned_to").notNull(), // user ID of cashier
+  assignedTo: integer("assigned_to").notNull(), // user ID
   status: varchar("status", { length: 50 }).notNull().default("active"), // active, inactive, maintenance
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -449,19 +449,19 @@ export const insertPosTerminalSchema = createInsertSchema(posTerminals).omit({
 });
 
 // POS Transactions
-export const posTransactions = mysqlTable("pos_transactions", {
-  id: int("id").primaryKey().autoincrement(),
-  transactionNumber: varchar("transaction_number", { length: 50 }).notNull(),
-  terminalId: int("terminal_id").notNull(),
-  cashierId: int("cashier_id").notNull(),
-  patientId: int("patient_id"), // optional, for tracking patient purchases
+export const posTransactions = pgTable("pos_transactions", {
+  id: serial("id").primaryKey(),
+  transactionNumber: varchar("transaction_number", { length: 100 }).notNull().unique(),
+  terminalId: integer("terminal_id").notNull(),
+  cashierId: integer("cashier_id").notNull(), // user ID of cashier
+  patientId: integer("patient_id"), // optional patient reference
   transactionDate: timestamp("transaction_date").defaultNow().notNull(),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }),
-  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }),
-  netAmount: decimal("net_amount", { precision: 10, scale: 2 }).notNull(),
-  paymentMethod: varchar("payment_method", { length: 50 }).notNull(), // cash, card, mobile
-  paymentStatus: varchar("payment_status", { length: 50 }).notNull().default("completed"), // pending, completed, failed
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+  discountAmount: numeric("discount_amount", { precision: 10, scale: 2 }),
+  taxAmount: numeric("tax_amount", { precision: 10, scale: 2 }),
+  netAmount: numeric("net_amount", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: varchar("payment_method", { length: 100 }).notNull(), // cash, card, insurance
+  paymentStatus: varchar("payment_status", { length: 50 }).notNull().default("completed"), // completed, refunded, failed
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -471,16 +471,16 @@ export const insertPosTransactionSchema = createInsertSchema(posTransactions).om
 });
 
 // POS Transaction Items
-export const posTransactionItems = mysqlTable("pos_transaction_items", {
-  id: int("id").primaryKey().autoincrement(),
-  transactionId: int("transaction_id").notNull(),
-  itemId: int("item_id").notNull(), // ID of inventory item or service
-  itemType: varchar("item_type", { length: 50 }).notNull(), // inventory, service
-  quantity: int("quantity").notNull(),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 10, scale: 2 }),
-  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }),
-  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+export const posTransactionItems = pgTable("pos_transaction_items", {
+  id: serial("id").primaryKey(),
+  transactionId: integer("transaction_id").notNull(),
+  itemId: integer("item_id").notNull(), // inventory item or service ID
+  itemType: varchar("item_type", { length: 50 }).notNull(), // inventory_item, service
+  quantity: integer("quantity").notNull(),
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
+  discount: numeric("discount", { precision: 10, scale: 2 }),
+  taxRate: numeric("tax_rate", { precision: 5, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -489,18 +489,18 @@ export const insertPosTransactionItemSchema = createInsertSchema(posTransactionI
   createdAt: true,
 });
 
-// Clinical Decision Support
-export const clinicalGuidelines = mysqlTable("clinical_guidelines", {
-  id: int("id").primaryKey().autoincrement(),
+// Clinical Guidelines
+export const clinicalGuidelines = pgTable("clinical_guidelines", {
+  id: serial("id").primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   condition: varchar("condition", { length: 255 }).notNull(),
-  assessment: varchar("assessment", { length: 1000 }).notNull(),
-  recommendedActions: json("recommended_actions").notNull(),
-  evidenceLevel: varchar("evidence_level", { length: 50 }).notNull(),
   source: varchar("source", { length: 255 }).notNull(),
+  assessment: text("assessment").notNull(),
+  recommendedActions: jsonb("recommended_actions").notNull(),
+  evidenceLevel: varchar("evidence_level", { length: 50 }).notNull(),
   publishDate: timestamp("publish_date").notNull(),
   lastUpdated: timestamp("last_updated").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("active"), // active, archived, draft
+  status: varchar("status", { length: 50 }).notNull().default("active"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -509,17 +509,17 @@ export const insertClinicalGuidelineSchema = createInsertSchema(clinicalGuidelin
   createdAt: true,
 });
 
-// Diagnostic Assistants
-export const diagnosticSessions = mysqlTable("diagnostic_sessions", {
-  id: int("id").primaryKey().autoincrement(),
-  patientId: int("patient_id").notNull(),
-  doctorId: int("doctor_id").notNull(),
-  symptoms: json("symptoms").notNull(),
-  suggestedDiagnosis: json("suggested_diagnosis").notNull(),
-  confidence: varchar("confidence", { length: 50 }).notNull(), // high, medium, low
-  guidelineId: int("guideline_id"), // reference to relevant clinical guideline if applicable
-  doctorFeedback: varchar("doctor_feedback", { length: 1000 }),
-  finalDiagnosis: varchar("final_diagnosis", { length: 255 }),
+// Diagnostic Sessions
+export const diagnosticSessions = pgTable("diagnostic_sessions", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
+  symptoms: jsonb("symptoms").notNull(),
+  suggestedDiagnosis: jsonb("suggested_diagnosis").notNull(),
+  confidence: varchar("confidence", { length: 50 }).notNull(),
+  guidelineId: integer("guideline_id"), // reference to the clinical guideline
+  doctorFeedback: text("doctor_feedback"),
+  finalDiagnosis: text("final_diagnosis"),
   wasHelpful: boolean("was_helpful"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -529,17 +529,17 @@ export const insertDiagnosticSessionSchema = createInsertSchema(diagnosticSessio
   createdAt: true,
 });
 
-// Custom Report Templates
-export const reportTemplates = mysqlTable("report_templates", {
-  id: int("id").primaryKey().autoincrement(),
+// Report Templates
+export const reportTemplates = pgTable("report_templates", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 100 }).notNull(), // clinical, financial, administrative
-  description: varchar("description", { length: 1000 }),
-  config: json("config").notNull(), // JSON configuration for the report
-  createdBy: int("created_by").notNull(),
-  isSystem: boolean("is_system").default(false), // whether it's a system template or user-created
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description"),
+  config: jsonb("config").notNull(), // JSON configuration for the report
+  createdBy: integer("created_by").notNull(),
+  isSystem: boolean("is_system").default(false),
+  updatedAt: timestamp("updated_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertReportTemplateSchema = createInsertSchema(reportTemplates).omit({
@@ -549,34 +549,33 @@ export const insertReportTemplateSchema = createInsertSchema(reportTemplates).om
 });
 
 // Report Executions
-export const reportExecutions = mysqlTable("report_executions", {
-  id: int("id").primaryKey().autoincrement(),
-  templateId: int("template_id").notNull(),
-  executedBy: int("executed_by").notNull(),
-  status: varchar("status", { length: 50 }).notNull(), // pending, completed, failed
-  resultData: json("result_data"),
-  parameters: json("parameters"),
-  executedAt: timestamp("executed_at").defaultNow().notNull(),
+export const reportExecutions = pgTable("report_executions", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").notNull(),
+  executedBy: integer("executed_by").notNull(),
+  executedAt: timestamp("executed_at").notNull(),
+  resultData: jsonb("result_data"),
+  parameters: jsonb("parameters"),
+  status: varchar("status", { length: 50 }).notNull(),
 });
 
 export const insertReportExecutionSchema = createInsertSchema(reportExecutions).omit({
   id: true,
-  executedAt: true,
 });
 
 // Treatment Plans
-export const treatmentPlans = mysqlTable("treatment_plans", {
-  id: int("id").primaryKey().autoincrement(),
+export const treatmentPlans = pgTable("treatment_plans", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  patientId: int("patient_id").notNull(),
-  doctorId: int("doctor_id").notNull(),
-  admissionId: int("admission_id"), // if related to an inpatient admission
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
-  status: varchar("status", { length: 50 }).notNull().default("active"), // active, completed, cancelled
-  description: varchar("description", { length: 1000 }),
-  notes: varchar("notes", { length: 1000 }),
-  frequency: varchar("frequency", { length: 100 }), // daily, weekly, monthly, as needed
+  description: text("description"),
+  status: varchar("status", { length: 50 }).notNull().default("active"),
+  notes: text("notes"),
+  admissionId: integer("admission_id"), // optional link to admission
+  frequency: varchar("frequency", { length: 100 }), // daily, weekly, monthly, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -586,24 +585,23 @@ export const insertTreatmentPlanSchema = createInsertSchema(treatmentPlans).omit
 });
 
 // Medical Orders
-export const medicalOrders = mysqlTable("medical_orders", {
-  id: int("id").primaryKey().autoincrement(),
+export const medicalOrders = pgTable("medical_orders", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  patientId: int("patient_id").notNull(),
-  doctorId: int("doctor_id").notNull(),
-  admissionId: int("admission_id"), // if related to an inpatient admission
-  orderType: varchar("order_type", { length: 100 }).notNull(), // medication, lab, imaging, procedure, etc.
-  itemId: int("item_id"), // reference to medication or procedure
-  startDate: timestamp("start_date").notNull(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id").notNull(),
+  orderType: varchar("order_type", { length: 100 }).notNull(), // medication, lab, radiology, procedure
+  itemId: integer("item_id"), // link to inventory item for medication
   orderDate: timestamp("order_date").defaultNow().notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, in-progress, completed, cancelled
-  instructions: varchar("instructions", { length: 1000 }),
-  dosage: varchar("dosage", { length: 100 }), // for medications
-  route: varchar("route", { length: 50 }), // for medications (oral, IV, etc.)
-  frequency: varchar("frequency", { length: 100 }), // for medications (daily, BID, TID, etc.)
-  duration: int("duration"), // in days
-  priority: varchar("priority", { length: 50 }).notNull().default("routine"), // routine, urgent, stat
-  notes: varchar("notes", { length: 1000 }),
+  startDate: timestamp("start_date").notNull(),
+  duration: integer("duration"), // in days
+  status: varchar("status", { length: 50 }).notNull().default("ordered"),
+  notes: text("notes"),
+  instructions: text("instructions"),
+  dosage: varchar("dosage", { length: 100 }),
+  route: varchar("route", { length: 100 }),
+  frequency: varchar("frequency", { length: 100 }),
+  priority: varchar("priority", { length: 50 }).notNull().default("routine"), // STAT, routine, urgent
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -613,16 +611,16 @@ export const insertMedicalOrderSchema = createInsertSchema(medicalOrders).omit({
 });
 
 // Order Results
-export const orderResults = mysqlTable("order_results", {
-  id: int("id").primaryKey().autoincrement(),
-  orderId: int("order_id").notNull(),
+export const orderResults = pgTable("order_results", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  performedBy: integer("performed_by").notNull(),
   resultDate: timestamp("result_date"),
-  resultText: varchar("result_text", { length: 2000 }),
-  resultData: json("result_data"),
-  performedBy: int("performed_by").notNull(),
-  reviewedBy: int("reviewed_by"),
-  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, completed, cancelled
-  notes: varchar("notes", { length: 1000 }),
+  resultText: text("result_text"),
+  resultData: jsonb("result_data"),
+  reviewedBy: integer("reviewed_by"),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -631,7 +629,6 @@ export const insertOrderResultSchema = createInsertSchema(orderResults).omit({
   createdAt: true,
 });
 
-// Define types for the schema
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

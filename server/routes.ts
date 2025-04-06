@@ -15,10 +15,10 @@ import {
   insertInventoryItemSchema,
   insertBillSchema,
   insertBillItemSchema,
-  insertTreatmentSchema,
+  insertTreatmentPlanSchema,
   insertMedicalOrderSchema,
   insertOrderResultSchema,
-} from "@shared/schema";
+} from "@shared/schema.pg";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import passport from "passport";
@@ -1538,7 +1538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/treatments", requireAuth, async (req, res) => {
     try {
-      const treatmentData = insertTreatmentSchema.parse(req.body);
+      const treatmentData = insertTreatmentPlanSchema.parse(req.body);
       const treatment = await storage.createTreatment(treatmentData);
       res.status(201).json(treatment);
     } catch (error: any) {

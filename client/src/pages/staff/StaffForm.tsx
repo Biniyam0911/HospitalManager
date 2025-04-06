@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema.pg";
 
 // Create a form schema with validation
 const formSchema = insertUserSchema.extend({

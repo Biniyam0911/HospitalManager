@@ -101,7 +101,7 @@ import {
   type InsertServiceOrder,
   type ServiceOrderItem,
   type InsertServiceOrderItem,
-} from "@shared/schema";
+} from "@shared/schema.pg";
 
 // Interface for storage operations
 export interface IStorage {

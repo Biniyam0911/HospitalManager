@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertMedicalRecordSchema, insertMedicalOrderSchema } from "@shared/schema";
+import { insertMedicalRecordSchema, insertMedicalOrderSchema } from "@shared/schema.pg";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
 
