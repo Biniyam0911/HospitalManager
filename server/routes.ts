@@ -489,17 +489,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the service first
       const newService = await storage.createService(serviceInsertData);
 
-      // If price data is provided, create initial price version
-      if (price) {
-        const priceVersionData = {
-          serviceId: newService.id,
-          price: price.toString(),
-          effectiveDate: effectiveDate || new Date(),
-          year: year || new Date().getFullYear()
-        };
+      // Always create initial price version
+      const priceVersionData = {
+        serviceId: newService.id,
+        price: (price || "0.00").toString(),
+        effectiveDate: effectiveDate || new Date(),
+        year: year || new Date().getFullYear(),
+        createdBy: req.user?.id || 1
+      };
 
-        await storage.createServicePriceVersion(priceVersionData);
-      }
+      await storage.createServicePriceVersion(priceVersionData);
 
       // Get the current price version after creating
       const currentPriceVersion = await storage.getCurrentServicePriceVersion(newService.id);
