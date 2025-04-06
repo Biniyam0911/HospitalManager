@@ -609,6 +609,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service Orders Routes
+  app.get("/api/service-orders", requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getAllServiceOrders();
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-orders/pending", requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getPendingServiceOrders();
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const order = await storage.getServiceOrder(Number(req.params.id));
+      if (!order) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-orders", requireAuth, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const createdBy = req.user.id;
+      const order = await storage.createServiceOrder({ 
+        ...req.body, 
+        createdBy, 
+        status: req.body.status || "pending",
+        orderDate: new Date()
+      });
+      res.status(201).json(order);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/service-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const order = await storage.updateServiceOrder(Number(req.params.id), req.body);
+      if (!order) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-orders/patient/:patientId", requireAuth, async (req, res) => {
+    try {
+      const patientId = Number(req.params.patientId);
+      const orders = await storage.getServiceOrdersByPatient(patientId);
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-orders/bill/:billId", requireAuth, async (req, res) => {
+    try {
+      const billId = Number(req.params.billId);
+      const orders = await storage.getServiceOrdersByBill(billId);
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Service Order Items Routes
+  app.get("/api/service-order-items/order/:serviceOrderId", requireAuth, async (req, res) => {
+    try {
+      const serviceOrderId = Number(req.params.serviceOrderId);
+      const items = await storage.getServiceOrderItemsByOrder(serviceOrderId);
+      res.json(items);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-order-items", requireAuth, async (req, res) => {
+    try {
+      const item = await storage.createServiceOrderItem({
+        ...req.body,
+        status: req.body.status || "pending"
+      });
+      res.status(201).json(item);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/service-order-items/:id", requireAuth, async (req, res) => {
+    try {
+      const item = await storage.updateServiceOrderItem(Number(req.params.id), req.body);
+      if (!item) {
+        return res.status(404).json({ message: "Service order item not found" });
+      }
+      res.json(item);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-order-items/:id", requireAuth, async (req, res) => {
+    try {
+      const item = await storage.getServiceOrderItem(Number(req.params.id));
+      if (!item) {
+        return res.status(404).json({ message: "Service order item not found" });
+      }
+      res.json(item);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Billing Routes
   app.get("/api/bills", requireAuth, async (req, res) => {
     try {
@@ -1251,6 +1380,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Report execution not found" });
       }
       res.json(updatedExecution);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Service Order Routes
+  app.get("/api/service-orders", requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getAllServiceOrders();
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const order = await storage.getServiceOrder(id);
+      if (!order) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      res.json(order);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/service-orders/patient/:patientId", requireAuth, async (req, res) => {
+    try {
+      const patientId = Number(req.params.patientId);
+      const orders = await storage.getServiceOrdersByPatient(patientId);
+      res.json(orders);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-orders", requireAuth, async (req, res) => {
+    try {
+      const orderData = req.body;
+      // Set default values if not provided
+      if (!orderData.status) orderData.status = "pending";
+      if (!orderData.totalAmount) orderData.totalAmount = "0.00";
+      if (!orderData.orderDate) orderData.orderDate = new Date();
+      if (req.user) {
+        orderData.createdBy = req.user.id;
+      }
+      
+      const newOrder = await storage.createServiceOrder(orderData);
+      res.status(201).json(newOrder);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/service-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const orderData = req.body;
+      const updatedOrder = await storage.updateServiceOrder(id, orderData);
+      
+      if (!updatedOrder) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      
+      res.json(updatedOrder);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Service Order Items Routes
+  app.get("/api/service-order-items/order/:orderId", requireAuth, async (req, res) => {
+    try {
+      const orderId = Number(req.params.orderId);
+      const items = await storage.getServiceOrderItemsByOrder(orderId);
+      res.json(items);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-order-items", requireAuth, async (req, res) => {
+    try {
+      const itemData = req.body;
+      // Set default values if not provided
+      if (!itemData.status) itemData.status = "pending";
+      if (!itemData.quantity) itemData.quantity = 1;
+      
+      const newItem = await storage.createServiceOrderItem(itemData);
+      res.status(201).json(newItem);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/service-order-items/:id", requireAuth, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const itemData = req.body;
+      const updatedItem = await storage.updateServiceOrderItem(id, itemData);
+      
+      if (!updatedItem) {
+        return res.status(404).json({ message: "Service order item not found" });
+      }
+      
+      res.json(updatedItem);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

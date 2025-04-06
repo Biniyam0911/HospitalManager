@@ -395,6 +395,44 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   createdAt: true,
 });
 
+// Service Orders
+export const serviceOrders = pgTable("service_orders", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  doctorId: integer("doctor_id"), // Optional if service doesn't require a doctor
+  orderDate: timestamp("order_date").defaultNow().notNull(),
+  status: text("status").notNull().default("pending"), // pending, completed, cancelled
+  totalAmount: numeric("total_amount").notNull().default("0"),
+  billId: integer("bill_id"), // Reference to bill if billed
+  notes: text("notes"),
+  createdBy: integer("created_by").notNull(), // User who created the order
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertServiceOrderSchema = createInsertSchema(serviceOrders).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Service Order Items
+export const serviceOrderItems = pgTable("service_order_items", {
+  id: serial("id").primaryKey(),
+  serviceOrderId: integer("service_order_id").notNull(),
+  serviceId: integer("service_id").notNull(),
+  servicePriceVersionId: integer("service_price_version_id").notNull(), // Reference to price at time of order
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: numeric("unit_price").notNull(),
+  totalPrice: numeric("total_price").notNull(),
+  status: text("status").notNull().default("pending"), // pending, completed, cancelled
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertServiceOrderItemSchema = createInsertSchema(serviceOrderItems).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Point of Sale
 export const pos_terminals = pgTable("pos_terminals", {
   id: serial("id").primaryKey(),
@@ -687,3 +725,9 @@ export type InsertMedicalOrder = z.infer<typeof insertMedicalOrderSchema>;
 
 export type OrderResult = typeof orderResults.$inferSelect;
 export type InsertOrderResult = z.infer<typeof insertOrderResultSchema>;
+
+export type ServiceOrder = typeof serviceOrders.$inferSelect;
+export type InsertServiceOrder = z.infer<typeof insertServiceOrderSchema>;
+
+export type ServiceOrderItem = typeof serviceOrderItems.$inferSelect;
+export type InsertServiceOrderItem = z.infer<typeof insertServiceOrderItemSchema>;

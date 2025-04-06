@@ -12,6 +12,7 @@ import {
   BarChart4,
   Settings,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 
 const Sidebar: React.FC = () => {
@@ -51,6 +52,12 @@ const Sidebar: React.FC = () => {
       label: "Clinical Services",
       icon: <FlaskRound className="h-5 w-5 mr-3 text-primary" />,
       path: "/services",
+      group: "Clinical Operations",
+    },
+    {
+      label: "Service Orders",
+      icon: <ClipboardList className="h-5 w-5 mr-3 text-primary" />,
+      path: "/services/orders",
       group: "Clinical Operations",
     },
     {

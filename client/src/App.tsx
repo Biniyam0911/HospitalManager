@@ -20,6 +20,7 @@ import Payments from "@/pages/billing/Payments";
 import Checkout from "@/pages/billing/Checkout";
 import Services from "@/pages/services/Services";
 import PriceHistory from "@/pages/services/PriceHistory";
+import ServiceOrders from "@/pages/services/ServiceOrders";
 import Reports from "@/pages/reports/Reports";
 import Login from "@/pages/Login";
 import AppLayout from "@/components/layout/AppLayout";
@@ -169,6 +170,12 @@ function Router() {
             <ProtectedRoute component={PriceHistory} serviceId={params.serviceId} />
           </AppLayout>
         )}
+      </Route>
+      
+      <Route path="/services/orders">
+        <AppLayout>
+          <ProtectedRoute component={ServiceOrders} />
+        </AppLayout>
       </Route>
       
       <Route path="/reports">

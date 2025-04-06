@@ -11,6 +11,8 @@ import {
   inventoryTransfers,
   services,
   servicePriceVersions,
+  serviceOrders,
+  serviceOrderItems,
   servicePackages,
   servicePackageItems,
   vehicles,
@@ -95,6 +97,10 @@ import {
   type InsertMedicalOrder,
   type OrderResult,
   type InsertOrderResult,
+  type ServiceOrder,
+  type InsertServiceOrder,
+  type ServiceOrderItem,
+  type InsertServiceOrderItem,
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -202,6 +208,22 @@ export interface IStorage {
   getServicePriceVersionsByYear(year: number): Promise<ServicePriceVersion[]>;
   getCurrentServicePriceVersion(serviceId: number): Promise<ServicePriceVersion | undefined>;
   getServicePrices(serviceId: number): Promise<ServicePriceVersion[]>;
+  
+  // Service Orders
+  getServiceOrder(id: number): Promise<ServiceOrder | undefined>;
+  createServiceOrder(insertOrder: InsertServiceOrder): Promise<ServiceOrder>;
+  updateServiceOrder(id: number, orderData: Partial<InsertServiceOrder>): Promise<ServiceOrder | undefined>;
+  getServiceOrdersByPatient(patientId: number): Promise<ServiceOrder[]>;
+  getServiceOrdersByBill(billId: number): Promise<ServiceOrder[]>;
+  getPendingServiceOrders(): Promise<ServiceOrder[]>;
+  getAllServiceOrders(): Promise<ServiceOrder[]>;
+  
+  // Service Order Items
+  getServiceOrderItem(id: number): Promise<ServiceOrderItem | undefined>;
+  createServiceOrderItem(insertItem: InsertServiceOrderItem): Promise<ServiceOrderItem>;
+  updateServiceOrderItem(id: number, itemData: Partial<InsertServiceOrderItem>): Promise<ServiceOrderItem | undefined>;
+  getServiceOrderItemsByOrder(serviceOrderId: number): Promise<ServiceOrderItem[]>;
+  getServiceOrderItemsByService(serviceId: number): Promise<ServiceOrderItem[]>;
   
   // Service Packages
   getServicePackage(id: number): Promise<ServicePackage | undefined>;
@@ -333,6 +355,8 @@ export class MemStorage implements IStorage {
   private inventoryTransfers: Map<number, InventoryTransfer>;
   private services: Map<number, Service>;
   private servicePriceVersions: Map<number, ServicePriceVersion>;
+  private serviceOrders: Map<number, ServiceOrder>;
+  private serviceOrderItems: Map<number, ServiceOrderItem>;
   private servicePackages: Map<number, ServicePackage>;
   private servicePackageItems: Map<number, ServicePackageItem>;
   private vehicles: Map<number, Vehicle>;
@@ -367,6 +391,8 @@ export class MemStorage implements IStorage {
     inventoryTransfers: number;
     services: number;
     servicePriceVersions: number;
+    serviceOrders: number;
+    serviceOrderItems: number;
     servicePackages: number;
     servicePackageItems: number;
     vehicles: number;
@@ -402,6 +428,8 @@ export class MemStorage implements IStorage {
     this.inventoryTransfers = new Map();
     this.services = new Map();
     this.servicePriceVersions = new Map();
+    this.serviceOrders = new Map();
+    this.serviceOrderItems = new Map();
     this.servicePackages = new Map();
     this.servicePackageItems = new Map();
     this.vehicles = new Map();
@@ -434,6 +462,8 @@ export class MemStorage implements IStorage {
       inventoryTransfers: 1,
       services: 1,
       servicePriceVersions: 1,
+      serviceOrders: 1,
+      serviceOrderItems: 1,
       servicePackages: 1,
       servicePackageItems: 1,
       vehicles: 1,
@@ -1042,6 +1072,107 @@ export class MemStorage implements IStorage {
     return Array.from(this.servicePriceVersions.values()).filter(
       pv => pv.serviceId === serviceId
     ).sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime());
+  }
+  
+  // Service Orders
+  async getServiceOrder(id: number): Promise<ServiceOrder | undefined> {
+    return this.serviceOrders.get(id);
+  }
+  
+  async createServiceOrder(insertOrder: InsertServiceOrder): Promise<ServiceOrder> {
+    const id = this.currentIds.serviceOrders++;
+    const createdAt = new Date();
+    const serviceOrder: ServiceOrder = { ...insertOrder, id, createdAt };
+    this.serviceOrders.set(id, serviceOrder);
+    return serviceOrder;
+  }
+  
+  async updateServiceOrder(id: number, orderData: Partial<InsertServiceOrder>): Promise<ServiceOrder | undefined> {
+    const order = await this.getServiceOrder(id);
+    if (!order) return undefined;
+    
+    const updatedOrder = { ...order, ...orderData };
+    this.serviceOrders.set(id, updatedOrder);
+    return updatedOrder;
+  }
+  
+  async getServiceOrdersByPatient(patientId: number): Promise<ServiceOrder[]> {
+    return Array.from(this.serviceOrders.values()).filter(
+      order => order.patientId === patientId
+    );
+  }
+  
+  async getServiceOrdersByBill(billId: number): Promise<ServiceOrder[]> {
+    return Array.from(this.serviceOrders.values()).filter(
+      order => order.billId === billId
+    );
+  }
+  
+  async getPendingServiceOrders(): Promise<ServiceOrder[]> {
+    return Array.from(this.serviceOrders.values()).filter(
+      order => order.status === "pending"
+    );
+  }
+  
+  async getAllServiceOrders(): Promise<ServiceOrder[]> {
+    return Array.from(this.serviceOrders.values());
+  }
+  
+  // Service Order Items
+  async getServiceOrderItem(id: number): Promise<ServiceOrderItem | undefined> {
+    return this.serviceOrderItems.get(id);
+  }
+  
+  async createServiceOrderItem(insertItem: InsertServiceOrderItem): Promise<ServiceOrderItem> {
+    const id = this.currentIds.serviceOrderItems++;
+    const createdAt = new Date();
+    const orderItem: ServiceOrderItem = { ...insertItem, id, createdAt };
+    this.serviceOrderItems.set(id, orderItem);
+    
+    // Update the order total amount
+    const order = await this.getServiceOrder(orderItem.serviceOrderId);
+    if (order) {
+      const currentTotal = parseFloat(order.totalAmount);
+      const itemTotal = parseFloat(orderItem.totalPrice);
+      const newTotal = (currentTotal + itemTotal).toFixed(2);
+      await this.updateServiceOrder(order.id, { totalAmount: newTotal });
+    }
+    
+    return orderItem;
+  }
+  
+  async updateServiceOrderItem(id: number, itemData: Partial<InsertServiceOrderItem>): Promise<ServiceOrderItem | undefined> {
+    const item = await this.getServiceOrderItem(id);
+    if (!item) return undefined;
+    
+    const oldTotal = parseFloat(item.totalPrice);
+    const updatedItem = { ...item, ...itemData };
+    this.serviceOrderItems.set(id, updatedItem);
+    
+    // If price changed, update order total
+    if (itemData.totalPrice) {
+      const order = await this.getServiceOrder(item.serviceOrderId);
+      if (order) {
+        const currentOrderTotal = parseFloat(order.totalAmount);
+        const newItemTotal = parseFloat(updatedItem.totalPrice);
+        const newOrderTotal = (currentOrderTotal - oldTotal + newItemTotal).toFixed(2);
+        await this.updateServiceOrder(order.id, { totalAmount: newOrderTotal });
+      }
+    }
+    
+    return updatedItem;
+  }
+  
+  async getServiceOrderItemsByOrder(serviceOrderId: number): Promise<ServiceOrderItem[]> {
+    return Array.from(this.serviceOrderItems.values()).filter(
+      item => item.serviceOrderId === serviceOrderId
+    );
+  }
+  
+  async getServiceOrderItemsByService(serviceId: number): Promise<ServiceOrderItem[]> {
+    return Array.from(this.serviceOrderItems.values()).filter(
+      item => item.serviceId === serviceId
+    );
   }
 
   async getServicePriceVersionsByYear(year: number): Promise<ServicePriceVersion[]> {
