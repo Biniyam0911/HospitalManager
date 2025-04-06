@@ -756,6 +756,12 @@ export class MemStorage implements IStorage {
       }
     }
     
+    // Update status based on Stripe payment status
+    if (billData.stripePaymentStatus === "succeeded") {
+      updatedBill.status = "paid";
+      updatedBill.paidAmount = updatedBill.totalAmount;
+    }
+    
     this.bills.set(id, updatedBill);
     return updatedBill;
   }

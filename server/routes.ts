@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import Stripe from "stripe";
 import {
   insertUserSchema,
   insertPatientSchema,
@@ -25,6 +26,11 @@ import { Strategy as LocalStrategy } from "passport-local";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Initialize Stripe
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+    apiVersion: "2023-10-16"
+  });
 
   // Setup session
   const MemoryStoreSession = MemoryStore(session);
@@ -653,6 +659,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json(handleZodError(error));
     }
   });
+
+  // Stripe Payment Routes
+  app.post("/api/create-payment-intent", requireAuth, async (req, res) => {
+    try {
+      const { billId } = req.body;
+      
+      if (!billId) {
+        return res.status(400).json({ message: "Bill ID is required" });
+      }
+
+      // Fetch the bill
+      const bill = await storage.getBill(Number(billId));
+      if (!bill) {
+        return res.status(404).json({ message: "Bill not found" });
+      }
+
+      // Verify the bill is not paid
+      if (bill.status === "Paid") {
+        return res.status(400).json({ message: "Bill is already paid" });
+      }
+
+      // Calculate remaining amount
+      const totalAmount = parseFloat(bill.totalAmount);
+      const paidAmount = bill.paidAmount ? parseFloat(bill.paidAmount) : 0;
+      const amountToPay = totalAmount - paidAmount;
+
+      if (amountToPay <= 0) {
+        return res.status(400).json({ message: "Bill is already fully paid" });
+      }
+
+      // Create payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amountToPay * 100), // Convert to cents
+        currency: "usd",
+        metadata: {
+          billId: bill.id.toString(),
+          patientId: bill.patientId.toString(),
+        },
+      });
+
+      // Update bill with payment intent ID
+      await storage.updateBill(bill.id, {
+        stripePaymentIntentId: paymentIntent.id,
+        stripePaymentStatus: paymentIntent.status,
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        billId: bill.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ message: error.message || "Failed to create payment intent" });
+    }
+  });
+
+  app.post("/api/confirm-payment", requireAuth, async (req, res) => {
+    try {
+      const { billId, paymentIntentId } = req.body;
+      
+      if (!billId || !paymentIntentId) {
+        return res.status(400).json({ message: "Bill ID and Payment Intent ID are required" });
+      }
+
+      // Fetch the bill
+      const bill = await storage.getBill(Number(billId));
+      if (!bill) {
+        return res.status(404).json({ message: "Bill not found" });
+      }
+
+      // Verify the payment intent
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status !== "succeeded") {
+        return res.status(400).json({ message: "Payment has not succeeded" });
+      }
+
+      // Calculate the new paid amount
+      const totalAmount = parseFloat(bill.totalAmount);
+      const currentPaidAmount = bill.paidAmount ? parseFloat(bill.paidAmount) : 0;
+      const paymentAmount = paymentIntent.amount / 100; // Convert from cents
+      const newPaidAmount = currentPaidAmount + paymentAmount;
+      
+      // Determine the new status
+      let newStatus = bill.status;
+      if (Math.abs(newPaidAmount - totalAmount) < 0.01) { // Within rounding error
+        newStatus = "Paid";
+      }
+
+      // Update the bill
+      const updatedBill = await storage.updateBill(bill.id, {
+        paidAmount: newPaidAmount.toFixed(2),
+        status: newStatus,
+        paymentMethod: "Credit Card",
+        stripePaymentStatus: paymentIntent.status,
+      });
+
+      res.json(updatedBill);
+    } catch (error: any) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ message: error.message || "Failed to confirm payment" });
+    }
+  });
+
+
 
   // Bill Items Routes
   app.post("/api/bill-items", requireAuth, async (req, res) => {

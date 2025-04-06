@@ -16,6 +16,8 @@ import StaffForm from "@/pages/staff/StaffForm";
 import Beds from "@/pages/inpatient/Beds";
 import Inventory from "@/pages/inventory/Inventory";
 import Billing from "@/pages/billing/Billing";
+import Payments from "@/pages/billing/Payments";
+import Checkout from "@/pages/billing/Checkout";
 import Reports from "@/pages/reports/Reports";
 import Login from "@/pages/Login";
 import AppLayout from "@/components/layout/AppLayout";
@@ -138,6 +140,18 @@ function Router() {
       <Route path="/billing">
         <AppLayout>
           <ProtectedRoute component={Billing} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/billing/payments">
+        <AppLayout>
+          <ProtectedRoute component={Payments} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/billing/checkout">
+        <AppLayout>
+          <ProtectedRoute component={Checkout} />
         </AppLayout>
       </Route>
       

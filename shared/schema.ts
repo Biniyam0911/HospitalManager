@@ -191,6 +191,9 @@ export const bills = pgTable("bills", {
   status: text("status").notNull().default("pending"), // pending, paid, partial
   billDate: timestamp("bill_date").defaultNow().notNull(),
   dueDate: timestamp("due_date"),
+  paymentMethod: text("payment_method"), // cash, card, insurance
+  stripePaymentIntentId: text("stripe_payment_intent_id"), // Stripe payment intent ID
+  stripePaymentStatus: text("stripe_payment_status"), // Stripe payment status
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
