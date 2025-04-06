@@ -87,7 +87,7 @@ const Staff = () => {
         </div>
         <Button 
           className="bg-primary hover:bg-primary/90"
-          onClick={() => alert("Feature not implemented")}
+          onClick={() => navigate("/staff/new")}
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Staff Member

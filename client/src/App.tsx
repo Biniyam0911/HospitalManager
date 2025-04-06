@@ -9,6 +9,7 @@ import PatientForm from "@/pages/patients/PatientForm";
 import Appointments from "@/pages/appointments/Appointments";
 import AppointmentForm from "@/pages/appointments/AppointmentForm";
 import Staff from "@/pages/staff/Staff";
+import StaffForm from "@/pages/staff/StaffForm";
 import Beds from "@/pages/inpatient/Beds";
 import Inventory from "@/pages/inventory/Inventory";
 import Billing from "@/pages/billing/Billing";
@@ -88,6 +89,12 @@ function Router() {
       <Route path="/staff">
         <AppLayout>
           <ProtectedRoute component={Staff} />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/staff/new">
+        <AppLayout>
+          <ProtectedRoute component={StaffForm} />
         </AppLayout>
       </Route>
       
